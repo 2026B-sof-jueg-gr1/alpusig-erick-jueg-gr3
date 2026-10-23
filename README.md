@@ -19,9 +19,7 @@ El servidor local es necesario porque el juego utiliza módulos JavaScript.
 El workflow [`deploy-pages.yml`](./.github/workflows/deploy-pages.yml) publica automáticamente [`mi-primer-juego`](./mi-primer-juego) en cada push a `main` o `master`.
 
 1. Sube el repositorio a GitHub.
-2. Entra en **Settings → Pages**.
-3. Selecciona **GitHub Actions** como fuente de despliegue.
-4. Ejecuta el workflow o realiza un push a la rama principal.
+2. Ejecuta el workflow o realiza un push a la rama principal.
 
 La URL resultante tendrá este formato:
 
