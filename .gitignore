@@ -1,0 +1,9 @@
+# Dependencias
+node_modules/
+
+# Archivos del sistema y logs
+.DS_Store
+Thumbs.db
+*.log
+
+docs/

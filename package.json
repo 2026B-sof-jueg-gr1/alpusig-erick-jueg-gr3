@@ -1,0 +1,15 @@
+{
+  "name": "the-last-spartan",
+  "version": "1.0.0",
+  "description": "Juego 2D de acción y plataformas desarrollado con Phaser",
+  "main": "mi-primer-juego/src/main.js",
+  "scripts": {
+    "copy:phaser": "node -e \"const fs=require('fs'); fs.mkdirSync('mi-primer-juego/lib', {recursive:true}); fs.copyFileSync('node_modules/phaser/dist/phaser.min.js', 'mi-primer-juego/lib/phaser.min.js'); console.log('Phaser copiado exitosamente a mi-primer-juego/lib/phaser.min.js');\"",
+    "postinstall": "npm run copy:phaser",
+    "build": "npm run copy:phaser",
+    "start": "npx serve mi-primer-juego"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1"
+  }
+}
