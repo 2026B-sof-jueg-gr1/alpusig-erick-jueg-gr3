@@ -91,9 +91,14 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
   }
 
   applyStateVisuals() {
+    if (this.gameplayState === SPARTAN_STATES.DESPERATE_SPRINT) {
+      this.setTexture("spartan_desperate_sprint");
+      this.body.setSize(34, 70).setOffset(12, 4);
+      return;
+    }
+
     if (
-      this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE ||
-      this.gameplayState === SPARTAN_STATES.DESPERATE_SPRINT
+      this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE
     ) {
       if (this.isDucked) {
         this.setTexture("spartan_wounded_duck");
@@ -470,6 +475,12 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
 
   applyWalkCadence(delta, speed) {
     this.walkPhase += (delta / 1000) * (speed / 24);
+    if (this.gameplayState === SPARTAN_STATES.DESPERATE_SPRINT) {
+      // Carrera pesada y errática impulsada por el pánico a pesar de la herida
+      const wobble = Math.sin(this.walkPhase * 1.45) * 6.5 + Math.cos(this.walkPhase * 3.1) * 2.4;
+      this.setAngle(this.facing * -5 + wobble);
+      return;
+    }
     const tiltAmplitude = this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE ? 5.2 : 1.8;
     this.setAngle(Math.sin(this.walkPhase) * tiltAmplitude);
   }

@@ -23,7 +23,8 @@ export class ComicPanel {
       speaker: options.speaker ?? "NARRADOR",
       text: options.text ?? "",
       portraitKey: options.portraitKey ?? null,
-      variant: options.variant ?? "dialogue", // "dialogue" | "thought" | "dramatic"
+      variant: options.variant ?? "dialogue", // "dialogue" | "thought" | "dramatic" | "sepia"
+      shaky: options.shaky ?? false,
       autoDismissDelay: options.autoDismissDelay ?? 0,
       ...options
     };
@@ -44,14 +45,29 @@ export class ComicPanel {
   }
 
   createPanel() {
-    const { width, height, speaker, text, portraitKey, variant } = this.options;
+    const { width, height, speaker, text, portraitKey, variant, shaky } = this.options;
     const isDramatic = variant === "dramatic";
     const isThought = variant === "thought";
+    const isSepia = variant === "sepia";
 
-    const fillColor = isDramatic ? 0x1d1312 : (isThought ? 0xebe5d5 : SPARTA_COLORS.parchment);
-    const borderColor = isDramatic ? SPARTA_COLORS.bronzeLight : SPARTA_COLORS.ink;
-    const textColor = isDramatic ? "#fff6e5" : "#1f1916";
-    const tagBgColor = isDramatic ? SPARTA_COLORS.crimsonBright : SPARTA_COLORS.crimson;
+    const fillColor = isDramatic
+      ? 0x1d1312
+      : isSepia
+        ? 0xd9c29c
+        : isThought
+          ? 0xebe5d5
+          : SPARTA_COLORS.parchment;
+    const borderColor = isDramatic
+      ? SPARTA_COLORS.bronzeLight
+      : isSepia
+        ? 0x5c3a21
+        : SPARTA_COLORS.ink;
+    const textColor = isDramatic ? "#fff6e5" : isSepia ? "#2d1d12" : "#1f1916";
+    const tagBgColor = isDramatic
+      ? SPARTA_COLORS.crimsonBright
+      : isSepia
+        ? 0x704924
+        : SPARTA_COLORS.crimson;
 
     const bg = this.scene.add.graphics();
     // Sombra dura estilo cómic impreso
@@ -134,6 +150,19 @@ export class ComicPanel {
     }).setOrigin(0.5);
 
     this.container.add(content);
+    this.contentText = content;
+
+    if (shaky) {
+      this.shakyTween = this.scene.tweens.add({
+        targets: content,
+        x: textCenterX + 1.6,
+        y: 5.4,
+        duration: 55,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut"
+      });
+    }
   }
 
   show(duration = 320) {
@@ -187,6 +216,10 @@ export class ComicPanel {
   destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
+    if (this.shakyTween) {
+      this.shakyTween.stop();
+      this.shakyTween = null;
+    }
     if (this.autoTimer) {
       this.autoTimer.remove(false);
       this.autoTimer = null;

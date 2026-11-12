@@ -1,4 +1,4 @@
-import { WIDTH, GROUND_Y, COLORS, SPARTA_COLORS, GORGE_COLORS } from "../config/constants.js";
+import { WIDTH, GROUND_Y, COLORS, SPARTA_COLORS, GORGE_COLORS, ASHES_COLORS } from "../config/constants.js";
 
 /**
  * Generador procedural de texturas en memoria usando Phaser.GameObjects.Graphics.
@@ -21,6 +21,7 @@ export class TextureGenerator {
     this.generateComicPortraits(scene);
     this.generateParticles(scene);
     this.generateEscena2Textures(scene);
+    this.generateEscena3Textures(scene);
   }
 
   // --------------------------------------------------------------------------
@@ -708,6 +709,247 @@ export class TextureGenerator {
       // Salpicaduras de barro y sangre
       g.fillStyle(GORGE_COLORS.bloodRed, 0.75).fillCircle(44, 40, 3.5);
       g.fillStyle(0x4d3c2f, 0.7).fillCircle(24, 35, 3);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // TEXTURAS DE ESCENA 3: CENIZAS DEL DEBER (PUEBLO EN LLAMAS Y HITO 3.3)
+  // --------------------------------------------------------------------------
+  static generateEscena3Textures(scene) {
+    // Estado 4: Soldado en sprint desesperado herido (hacia la derecha base; flipX hacia la izquierda)
+    this.createTexture(scene, "spartan_desperate_sprint", 66, 76, (g) => {
+      g.fillStyle(0x5c1111).fillTriangle(4, 24, 22, 24, 0, 56);
+      this.drawSpartanBody(g, 8, 2, { wounded: true });
+      g.fillStyle(GORGE_COLORS.bloodRed).fillCircle(28, 38, 6);
+      // Lanza sujeta en diagonal mientras corre desesperado
+      this.drawDory(g, 14, 52, 60, 18);
+    });
+
+    // Suelo calcinado del pueblo y plaza saqueada
+    this.createTexture(scene, "spartan_ground_burned", 512, 100, (g) => {
+      g.fillStyle(0x1f1916).fillRect(0, 14, 512, 86);
+      g.fillStyle(0x3a2b22).fillRect(0, 6, 512, 10);
+      g.fillStyle(0x120e0d);
+      for (let i = 0; i < 16; i++) {
+        g.fillEllipse((i * 37) % 490, 22 + (i % 4) * 14, 28, 9);
+      }
+      g.fillStyle(ASHES_COLORS.emberOrange, 0.4);
+      for (let e = 0; e < 8; e++) {
+        g.fillCircle((e * 67 + 20) % 495, 16 + (e % 3) * 10, 2.2);
+      }
+    });
+
+    this.createTexture(scene, "plaza_ground_burned", 512, 100, (g) => {
+      g.fillStyle(0x282321).fillRect(0, 10, 512, 90);
+      g.fillStyle(0x4a403a).fillRect(0, 4, 512, 10);
+      g.lineStyle(2, 0x161211);
+      for (let i = 0; i < 8; i++) {
+        g.strokeRect(i * 64, 10, 64, 24);
+      }
+    });
+
+    // Casa del Soldado en llamas y umbral carbonizado
+    this.createTexture(scene, "spartan_house_burned", 240, 190, (g) => {
+      g.fillStyle(0x544a42).fillRect(20, 74, 200, 116);
+      g.fillStyle(0x2b2420).fillRect(20, 162, 200, 28);
+      // Techo colapsado y vigas quemadas
+      g.fillStyle(ASHES_COLORS.charredWood).fillTriangle(8, 78, 92, 26, 178, 78);
+      g.fillStyle(0x2a1b14).fillTriangle(110, 78, 178, 42, 232, 78);
+      g.lineStyle(4, 0x120d0a);
+      g.strokeLineShape(new Phaser.Geom.Line(18, 76, 112, 22));
+      g.strokeLineShape(new Phaser.Geom.Line(132, 48, 226, 76));
+      // Resplandor de brasas tras el umbral quemado
+      g.fillStyle(0x160e0b).fillRoundedRect(54, 102, 52, 88, { tl: 8, tr: 8, bl: 0, br: 0 });
+      g.fillStyle(ASHES_COLORS.emberOrange, 0.36).fillRect(60, 110, 40, 80);
+      // Ventana humeante
+      g.fillStyle(0x171210).fillRect(144, 96, 44, 42);
+      g.fillStyle(ASHES_COLORS.emberOrange, 0.25).fillRect(150, 102, 32, 30);
+    });
+
+    // Casa de aldeano colapsada y quemada
+    this.createTexture(scene, "spartan_village_house_burned", 200, 165, (g) => {
+      g.fillStyle(0x4c433c).fillRect(16, 66, 168, 99);
+      g.fillStyle(ASHES_COLORS.charredWood).fillTriangle(6, 70, 72, 24, 152, 70);
+      g.fillStyle(0x1a1412).fillRect(80, 98, 40, 67);
+      g.fillStyle(ASHES_COLORS.emberOrange, 0.3).fillRect(84, 104, 32, 61);
+      g.fillStyle(0x1a1412).fillRect(36, 86, 28, 28).fillRect(136, 86, 28, 28);
+    });
+
+    // Olivo calcinado
+    this.createTexture(scene, "olive_tree_burned", 114, 164, (g) => {
+      g.fillStyle(0x211915).fillRect(48, 80, 18, 84);
+      g.lineStyle(5, 0x1a1412);
+      g.strokeLineShape(new Phaser.Geom.Line(54, 88, 28, 48));
+      g.strokeLineShape(new Phaser.Geom.Line(58, 84, 86, 44));
+      g.strokeLineShape(new Phaser.Geom.Line(56, 72, 56, 24));
+    });
+
+    // Pozo destrozado
+    this.createTexture(scene, "spartan_well_burned", 74, 70, (g) => {
+      g.fillStyle(0x4b443e).fillRoundedRect(10, 36, 54, 34, 4);
+      g.lineStyle(4, 0x211915).strokeLineShape(new Phaser.Geom.Line(16, 36, 24, 14));
+      g.strokeLineShape(new Phaser.Geom.Line(56, 36, 48, 20));
+    });
+
+    // Pórtico de vigilancia chamuscado y roto
+    this.createTexture(scene, "watchpost_arch_burned", 176, 196, (g) => {
+      g.fillStyle(0x4b433b).fillRect(16, 46, 28, 150);
+      g.fillStyle(0x4b433b).fillRect(132, 54, 28, 142);
+      g.fillStyle(0x3a332d).fillRect(4, 28, 168, 26);
+      g.fillStyle(0x161211, 0.65).fillCircle(88, 40, 20);
+      g.lineStyle(3, 0x161211).strokeLineShape(new Phaser.Geom.Line(44, 30, 112, 52));
+    });
+
+    // Estandarte quebrado y quemado de la plaza
+    this.createTexture(scene, "broken_banner_pole", 40, 138, (g) => {
+      g.fillStyle(0x2c1d14).fillRect(18, 48, 4, 90);
+      g.fillStyle(0x4b1212).fillTriangle(10, 56, 28, 52, 16, 98);
+    });
+
+    // Cajas y ánforas saqueadas
+    this.createTexture(scene, "looted_crate", 52, 34, (g) => {
+      g.fillStyle(0x422b1b).fillRect(4, 12, 26, 20);
+      g.lineStyle(2, 0x1c120b).strokeRect(4, 12, 26, 20);
+      g.fillStyle(0x8c3f26).fillEllipse(38, 24, 18, 12);
+      g.fillStyle(0x161211).fillCircle(32, 24, 4);
+    });
+
+    // Cuerpos sin vida de ancianos guardias, aldeanos y escudo de juguete partido
+    this.createTexture(scene, "elder_guard_dead", 76, 40, (g) => {
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.8).fillEllipse(38, 32, 46, 10);
+      g.fillStyle(0x4b4339).fillRoundedRect(16, 14, 34, 18, 5);
+      g.fillStyle(0xd0a27a).fillCircle(14, 20, 8);
+      g.fillStyle(0xe5e7eb).fillEllipse(12, 26, 12, 8);
+      g.fillStyle(0xc68e62).fillRect(48, 20, 20, 8);
+    });
+
+    this.createTexture(scene, "fallen_villager", 72, 36, (g) => {
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.75).fillEllipse(34, 28, 40, 8);
+      g.fillStyle(0x6e6252).fillRoundedRect(14, 12, 32, 16, 5);
+      g.fillStyle(0xd69d70).fillCircle(14, 18, 7);
+    });
+
+    this.createTexture(scene, "toy_shield_broken", 34, 26, (g) => {
+      // Dos mitades del escudo de madera de juguete manchadas de ceniza
+      g.fillStyle(0x52341c).fillEllipse(10, 14, 16, 18);
+      g.fillStyle(0x4a2f19).fillEllipse(24, 16, 14, 16);
+      g.fillStyle(0x1f1d1c, 0.65).fillCircle(14, 14, 7);
+      g.lineStyle(2, 0x8f1d1d).strokeLineShape(new Phaser.Geom.Line(7, 17, 12, 9));
+      g.strokeLineShape(new Phaser.Geom.Line(22, 10, 27, 19));
+    });
+
+    // Partículas de llamas, brasas y humo denso
+    this.createTexture(scene, "fire_flame", 22, 30, (g) => {
+      g.fillStyle(ASHES_COLORS.emberOrange, 0.78).fillEllipse(11, 19, 18, 20);
+      g.fillStyle(ASHES_COLORS.emberBright, 0.9).fillEllipse(11, 21, 9, 13);
+    });
+
+    this.createTexture(scene, "ember_spark", 8, 8, (g) => {
+      g.fillStyle(ASHES_COLORS.emberOrange, 0.9).fillCircle(4, 4, 3.5);
+      g.fillStyle(ASHES_COLORS.emberBright, 1).fillCircle(4, 4, 1.5);
+    });
+
+    this.createTexture(scene, "black_smoke", 48, 48, (g) => {
+      g.fillStyle(ASHES_COLORS.smokeDark, 0.55).fillCircle(24, 24, 21);
+      g.fillStyle(0x272326, 0.45).fillCircle(19, 20, 14);
+    });
+
+    // Cinemática Final Hito 3.3 (Vista de espalda y tabla familiar en cenizas)
+    this.createTexture(scene, "fp3_soldier_back", 120, 164, (g) => {
+      // Piernas firmes deteniéndose en el umbral
+      g.fillStyle(0x9f714c).fillRect(36, 102, 16, 56).fillRect(68, 102, 16, 56);
+      g.fillStyle(SPARTA_COLORS.bronze).fillRect(36, 126, 16, 26).fillRect(68, 126, 16, 26);
+      // Capa desgarrada y espalda manchada
+      g.fillStyle(0x5b1012).fillTriangle(30, 38, 90, 38, 22, 138);
+      g.fillStyle(0x6e1919).fillRoundedRect(28, 38, 64, 72, 12);
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.8).fillCircle(46, 68, 13);
+      // Cabeza y nuca desde atrás
+      g.fillStyle(0x231712).fillCircle(60, 24, 20);
+      // Lanza sujeta en mano derecha
+      this.drawDory(g, 92, 152, 104, 14);
+    });
+
+    this.createTexture(scene, "fp3_soldier_kneeling", 120, 118, (g) => {
+      g.fillStyle(0x5b1012).fillTriangle(32, 30, 88, 30, 24, 108);
+      g.fillStyle(0x6e1919).fillRoundedRect(32, 30, 56, 58, 12);
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.8).fillCircle(48, 56, 12);
+      g.fillStyle(0x9f714c).fillRect(28, 82, 64, 28);
+      g.fillStyle(0x231712).fillCircle(60, 18, 18);
+    });
+
+    this.createTexture(scene, "fp3_family_bodies", 240, 96, (g) => {
+      // Ceniza en el suelo
+      g.fillStyle(0x2b2726, 0.75).fillEllipse(120, 68, 220, 44);
+      // Esposa caída
+      g.fillStyle(0xbfb19a).fillRoundedRect(24, 34, 96, 36, 10);
+      g.fillStyle(0xc88d65).fillCircle(30, 44, 13);
+      g.fillStyle(0x3a241b).fillCircle(24, 42, 13);
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.7).fillCircle(74, 52, 11);
+      // Niño y niña junto a ella
+      g.fillStyle(0x7c6244).fillRoundedRect(126, 40, 56, 26, 8);
+      g.fillStyle(0xc68e62).fillCircle(176, 48, 9);
+      g.fillStyle(0x9c4b35).fillRoundedRect(142, 54, 52, 24, 8);
+      g.fillStyle(0xd29c76).fillCircle(190, 62, 9);
+    });
+
+    this.createTexture(scene, "fp3_soldier_embracing", 250, 120, (g) => {
+      g.fillStyle(0x2b2726, 0.75).fillEllipse(125, 92, 230, 44);
+      // Cuerpos de la familia bajo su abrazo
+      g.fillStyle(0xbfb19a).fillRoundedRect(88, 56, 118, 36, 10);
+      g.fillStyle(0x7c6244).fillRoundedRect(136, 62, 68, 28, 8);
+      // Soldado inclinado abrazándolos entre las cenizas
+      g.fillStyle(0x5b1012).fillRoundedRect(32, 34, 86, 54, 14);
+      g.fillStyle(0xb58057).fillRoundedRect(86, 48, 56, 20, 8);
+      g.fillStyle(0x231712).fillCircle(72, 26, 18);
+    });
+
+    // Retratos para viñetas de Escena 3
+    this.createTexture(scene, "portrait_soldier_despair", 72, 72, (g) => {
+      g.fillStyle(0x2d1412).fillRect(0, 0, 72, 72);
+      g.fillStyle(0x6e1919).fillCircle(36, 74, 28);
+      g.fillStyle(0xc6936c).fillCircle(36, 33, 17);
+      g.fillStyle(0x2a1d17).fillEllipse(36, 19, 34, 13);
+      g.fillStyle(0x2a1d17).fillRoundedRect(24, 39, 24, 12, 4);
+      g.fillStyle(0xffffff).fillCircle(30, 30, 4).fillCircle(42, 30, 4);
+      g.fillStyle(0x111111).fillCircle(30, 30, 1.8).fillCircle(42, 30, 1.8);
+      g.fillStyle(0x1f1d1c, 0.5).fillCircle(26, 37, 5).fillCircle(46, 36, 4);
+    });
+
+    this.createTexture(scene, "portrait_general_sepia", 72, 72, (g) => {
+      g.fillStyle(0xc2a378).fillRect(0, 0, 72, 72);
+      g.fillStyle(0x6e4726).fillEllipse(36, 12, 42, 15);
+      g.fillStyle(0x9c7648).fillRoundedRect(18, 18, 36, 42, 12);
+      g.fillStyle(0x3a2614).fillRect(24, 31, 24, 9);
+      g.fillStyle(0xe8d5b5).fillCircle(30, 35, 2).fillCircle(42, 35, 2);
+      g.lineStyle(2.5, 0x3a2614).strokeLineShape(new Phaser.Geom.Line(28, 49, 44, 49));
+    });
+
+    this.createTexture(scene, "portrait_hands_ash_blood", 72, 72, (g) => {
+      g.fillStyle(0x191615).fillRect(0, 0, 72, 72);
+      // Dos manos abiertas cubiertas de hollín y sangre
+      g.fillStyle(0xb58057).fillRoundedRect(12, 28, 22, 34, 6);
+      g.fillStyle(0xb58057).fillRoundedRect(38, 28, 22, 34, 6);
+      [14, 20, 26, 40, 46, 52].forEach((fx) => {
+        g.fillStyle(0xb58057).fillRect(fx, 14, 4, 16);
+      });
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.85).fillCircle(24, 42, 9).fillCircle(49, 38, 10);
+      g.fillStyle(0x1f1d1c, 0.7).fillCircle(19, 34, 7).fillCircle(45, 48, 8);
+    });
+
+    this.createTexture(scene, "portrait_soldier_penance", 72, 72, (g) => {
+      g.fillStyle(0x120d0c).fillRect(0, 0, 72, 72);
+      g.fillStyle(0x5b1012).fillCircle(36, 74, 28);
+      g.fillStyle(0xba8863).fillCircle(36, 33, 17);
+      // Manchas de hollín en rostro
+      g.fillStyle(0x1e1a18, 0.6).fillCircle(28, 38, 6).fillCircle(44, 35, 5);
+      g.fillStyle(0x231712).fillEllipse(36, 18, 34, 13);
+      g.fillStyle(0x231712).fillRoundedRect(24, 39, 24, 13, 4);
+      // Cejas marcadas de odio absoluto y lágrimas claras sobre el hollín
+      g.lineStyle(2.5, 0x0f0c0b);
+      g.strokeLineShape(new Phaser.Geom.Line(26, 25, 34, 29));
+      g.strokeLineShape(new Phaser.Geom.Line(46, 25, 38, 29));
+      g.fillStyle(0xffffff).fillCircle(30, 30, 2.2).fillCircle(42, 30, 2.2);
+      g.fillStyle(0xdbeafe, 0.85).fillRect(29, 33, 2, 7).fillRect(41, 33, 2, 7);
     });
   }
 }

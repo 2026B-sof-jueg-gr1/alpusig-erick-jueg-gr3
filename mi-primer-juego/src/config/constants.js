@@ -51,3 +51,17 @@ export const GORGE_COLORS = {
   dangerRed: 0xd92626
 };
 
+export const ASHES_COLORS = {
+  twilightTop: 0x160a0c,
+  twilightMid: 0x3b1514,
+  twilightHorizon: 0x7c2516,
+  nightSky: 0x09080c,
+  charredStone: 0x26211f,
+  charredWood: 0x1c1512,
+  ashGrey: 0x6b6560,
+  emberOrange: 0xf97316,
+  emberBright: 0xfacc15,
+  smokeDark: 0x141214,
+  sepiaPaper: 0xd9c29c
+};
+

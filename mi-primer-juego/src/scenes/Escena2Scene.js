@@ -761,7 +761,8 @@ export class Escena2Scene extends Phaser.Scene {
 
     this.cameras.main.fadeOut(2200, 0, 0, 0);
     this.time.delayedCall(2300, () => {
-      this.showEndOfScene2Overlay();
+      this.audio.stopAmbient();
+      this.scene.start("Escena3Scene");
     });
   }
 
@@ -793,9 +794,10 @@ export class Escena2Scene extends Phaser.Scene {
       color: "#1a1412",
       backgroundColor: "#e8b962",
       padding: { left: 18, right: 18, top: 10, bottom: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
 
     retryBtn.on("pointerdown", () => {
+      this.audio.stopAmbient();
       this.scene.restart({ startAt: checkpointMilestone });
     });
 
@@ -805,9 +807,12 @@ export class Escena2Scene extends Phaser.Scene {
       color: "#fff6e5",
       backgroundColor: "#7a1212",
       padding: { left: 16, right: 16, top: 10, bottom: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
 
-    menuBtn.on("pointerdown", () => this.scene.start("MenuScene"));
+    menuBtn.on("pointerdown", () => {
+      this.audio.stopAmbient();
+      this.scene.start("MenuScene");
+    });
 
     overlay.add([bg, title, retryBtn, menuBtn]);
     this.tweens.add({ targets: overlay, alpha: 1, duration: 400 });
@@ -836,34 +841,44 @@ export class Escena2Scene extends Phaser.Scene {
       color: "#fff6e5"
     }).setOrigin(0.5);
 
-    const nextHint = this.add.text(0, 10, "Próxima parada: ESCENA 3 — Cenizas del Deber", {
+    const nextHint = this.add.text(0, 10, "Siguiente capítulo: ESCENA 3 — Cenizas del Deber", {
       fontFamily: "Georgia, serif",
       fontSize: "16px",
       fontStyle: "italic",
       color: "#cbd5e1"
     }).setOrigin(0.5);
 
-    const replayBtn = this.add.text(-120, 82, "REPETIR ESCENA 2", {
+    const replayBtn = this.add.text(-195, 82, "REPETIR ESCENA 2", {
       fontFamily: "Georgia, serif",
-      fontSize: "16px",
+      fontSize: "15px",
       color: "#1a1412",
       backgroundColor: "#e8b962",
-      padding: { left: 16, right: 16, top: 10, bottom: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      padding: { left: 14, right: 14, top: 10, bottom: 10 }
+    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
 
     replayBtn.on("pointerdown", () => this.scene.restart({ startAt: "2.1" }));
 
-    const menuBtn = this.add.text(125, 82, "MENÚ PRINCIPAL", {
+    const nextBtn = this.add.text(0, 82, "AVANZAR A ESCENA 3 →", {
       fontFamily: "Georgia, serif",
-      fontSize: "16px",
+      fontSize: "15px",
       color: "#fff6e5",
       backgroundColor: "#7a1212",
-      padding: { left: 16, right: 16, top: 10, bottom: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      padding: { left: 14, right: 14, top: 10, bottom: 10 }
+    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
+
+    nextBtn.on("pointerdown", () => this.scene.start("Escena3Scene"));
+
+    const menuBtn = this.add.text(200, 82, "MENÚ PRINCIPAL", {
+      fontFamily: "Georgia, serif",
+      fontSize: "15px",
+      color: "#eaf4ff",
+      backgroundColor: "#1e3a5f",
+      padding: { left: 14, right: 14, top: 10, bottom: 10 }
+    }).setOrigin(0.5).setScrollFactor(0).setInteractive({ useHandCursor: true });
 
     menuBtn.on("pointerdown", () => this.scene.start("MenuScene"));
 
-    overlay.add([panel, header, title, nextHint, replayBtn, menuBtn]);
+    overlay.add([panel, header, title, nextHint, replayBtn, nextBtn, menuBtn]);
 
     this.cameras.main.resetFX();
     this.tweens.add({ targets: overlay, alpha: 1, duration: 700 });

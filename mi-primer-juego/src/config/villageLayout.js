@@ -51,6 +51,16 @@ export const VILLAGE_LAYOUT = {
     thoughtPathX: 1480,
     plazaSequenceX: 2480,
     generalBlockX: 2825
+  },
+
+  // Coordenadas inversas (derecha -> izquierda) reutilizadas en Escena 3: Cenizas del Deber
+  escena3: {
+    playerSpawn: { x: 3220, y: GROUND_Y - 38 },
+    watchpostTriggerX: 2045,
+    doorPromptX: 325,
+    doorThresholdX: 272,
+    ransackedPropsX: [1085, 1465, 1765, 2580, 2890],
+    fireSpotsX: [165, 255, 650, 1020, 1460, 1580, 1960, 2720]
   }
 };
 

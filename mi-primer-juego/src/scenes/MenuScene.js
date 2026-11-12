@@ -13,21 +13,21 @@ export class MenuScene extends Phaser.Scene {
 
   create() {
     addBackground(this);
-    addTitle(this, "THE LAST SPARTAN", 150);
+    addTitle(this, "THE LAST SPARTAN", 126);
 
-    this.add.text(WIDTH / 2, 222, "Parte 1: El Precio de la Gloria", {
+    this.add.text(WIDTH / 2, 194, "Parte 1: El Precio de la Gloria", {
       fontFamily: "Georgia, serif",
       fontSize: "23px",
       color: "#f4c542"
     }).setOrigin(0.5);
 
     // Botón Principal: Iniciar Campaña Narrativa (desde Escena 1)
-    const campaignBtn = this.add.text(WIDTH / 2, 315, "⚔  INICIAR CAMPAÑA (ESCENA 1)  ⚔", {
+    const campaignBtn = this.add.text(WIDTH / 2, 274, "⚔  INICIAR CAMPAÑA (ESCENA 1)  ⚔", {
       fontFamily: "Georgia",
-      fontSize: "25px",
+      fontSize: "24px",
       color: "#23272f",
       backgroundColor: "#f4c542",
-      padding: { left: 26, right: 26, top: 12, bottom: 12 }
+      padding: { left: 26, right: 26, top: 11, bottom: 11 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     campaignBtn.on("pointerover", () => campaignBtn.setStyle({ backgroundColor: "#ff8f3d" }));
@@ -35,9 +35,9 @@ export class MenuScene extends Phaser.Scene {
     campaignBtn.on("pointerdown", () => this.scene.start("Escena1Scene"));
 
     // Acceso directo a Escena 2
-    const scene2Btn = this.add.text(WIDTH / 2, 388, "🩸  ESCENA 2: EL BARRO, LA LANZA Y LA CAÍDA  🩸", {
+    const scene2Btn = this.add.text(WIDTH / 2, 342, "🩸  ESCENA 2: EL BARRO, LA LANZA Y LA CAÍDA  🩸", {
       fontFamily: "Georgia",
-      fontSize: "18px",
+      fontSize: "17px",
       color: "#fff6e5",
       backgroundColor: "#7a1212",
       padding: { left: 20, right: 20, top: 9, bottom: 9 }
@@ -47,8 +47,21 @@ export class MenuScene extends Phaser.Scene {
     scene2Btn.on("pointerout", () => scene2Btn.setStyle({ backgroundColor: "#7a1212" }));
     scene2Btn.on("pointerdown", () => this.scene.start("Escena2Scene", { startAt: "2.1" }));
 
+    // Acceso directo a Escena 3
+    const scene3Btn = this.add.text(WIDTH / 2, 404, "🔥  ESCENA 3: CENIZAS DEL DEBER  🔥", {
+      fontFamily: "Georgia",
+      fontSize: "17px",
+      color: "#fff6e5",
+      backgroundColor: "#5c2414",
+      padding: { left: 20, right: 20, top: 9, bottom: 9 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    scene3Btn.on("pointerover", () => scene3Btn.setStyle({ backgroundColor: "#8c351c" }));
+    scene3Btn.on("pointerout", () => scene3Btn.setStyle({ backgroundColor: "#5c2414" }));
+    scene3Btn.on("pointerdown", () => this.scene.start("Escena3Scene"));
+
     // Botón Secundario: Modo Combate Directo
-    const combatBtn = this.add.text(WIDTH / 2, 452, "🛡  MODO COMBATE DIRECTO  🛡", {
+    const combatBtn = this.add.text(WIDTH / 2, 466, "🛡  MODO COMBATE DIRECTO  🛡", {
       fontFamily: "Georgia",
       fontSize: "17px",
       color: "#eaf4ff",
@@ -62,7 +75,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.add.text(
       WIDTH / 2,
-      532,
+      546,
       "A/D: mover   •   J: estocada (x3)   •   K: barrido pesado   •   Shift/L: escudo   •   Shift+J: golpe escudo   •   P: pausa",
       { fontFamily: "Arial", fontSize: "14px", color: "#eaf4ff" }
     ).setOrigin(0.5);

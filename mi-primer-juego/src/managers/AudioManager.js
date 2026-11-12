@@ -588,6 +588,212 @@ export class AudioManager {
     });
   }
 
+  // ==========================================================================
+  // PAISAJES SONOROS Y EFECTOS DE ESCENA 3: CENIZAS DEL DEBER
+  // ==========================================================================
+
+  createNoiseBuffer(ctx, seconds = 2) {
+    const size = Math.floor(ctx.sampleRate * seconds);
+    const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < size; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    return buffer;
+  }
+
+  /** Viento ceniciento, brasas lejanas y acorde sombrío (Escena 3 - Hito 3.1) */
+  playAshenWindAmbient() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    this.stopAmbient();
+
+    const wind = ctx.createBufferSource();
+    wind.buffer = this.createNoiseBuffer(ctx, 2.5);
+    wind.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(280, ctx.currentTime);
+    filter.Q.setValueAtTime(1.6, ctx.currentTime);
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.01, ctx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 1.4);
+
+    wind.connect(filter);
+    filter.connect(masterGain);
+    masterGain.connect(ctx.destination);
+    wind.start();
+
+    // Zumbido grave trágico
+    const drone = ctx.createOscillator();
+    const droneGain = ctx.createGain();
+    drone.type = "triangle";
+    drone.frequency.setValueAtTime(65.41, ctx.currentTime);
+    droneGain.gain.setValueAtTime(0.035, ctx.currentTime);
+    drone.connect(droneGain);
+    droneGain.connect(ctx.destination);
+    drone.start();
+
+    this.ambientGain = masterGain;
+    this.ambientNodes.push(wind, filter, masterGain, drone, droneGain);
+
+    const crackleTimer = this.scene.time.addEvent({
+      delay: 750,
+      loop: true,
+      callback: () => {
+        if (Math.random() < 0.55) this.playFireCrackle(0.035);
+      }
+    });
+    this.activeTimers.push(crackleTimer);
+  }
+
+  playFireCrackle(volume = 0.05) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const src = ctx.createBufferSource();
+    src.buffer = this.createNoiseBuffer(ctx, 0.14);
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.setValueAtTime(1400 + Math.random() * 1400, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0005, ctx.currentTime + 0.12);
+
+    src.connect(hp);
+    hp.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  }
+
+  /** Respiración agitada, quejidos de dolor, lamentos lejanos y llamas activas (Hito 3.2) */
+  playDesperateSprintAudio() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    this.stopAmbient();
+
+    const blaze = ctx.createBufferSource();
+    blaze.buffer = this.createNoiseBuffer(ctx, 2);
+    blaze.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(620, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.085, ctx.currentTime);
+
+    blaze.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    blaze.start();
+
+    this.ambientGain = gain;
+    this.ambientNodes.push(blaze, filter, gain);
+
+    const breathTimer = this.scene.time.addEvent({
+      delay: 520,
+      loop: true,
+      callback: () => this.playAgitatedBreathBurst()
+    });
+    const lamentTimer = this.scene.time.addEvent({
+      delay: 2400,
+      loop: true,
+      callback: () => {
+        if (Math.random() < 0.7) this.playDistantLament();
+        this.playFireCrackle(0.07);
+      }
+    });
+    this.activeTimers.push(breathTimer, lamentTimer);
+  }
+
+  playAgitatedBreathBurst() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const src = ctx.createBufferSource();
+    src.buffer = this.createNoiseBuffer(ctx, 0.24);
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.setValueAtTime(720, ctx.currentTime);
+    bp.frequency.linearRampToValueAtTime(480, ctx.currentTime + 0.22);
+    bp.Q.setValueAtTime(2.2, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.005, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 0.07);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.23);
+
+    src.connect(bp);
+    bp.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  }
+
+  playDistantLament() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    const base = 310 + Math.random() * 90;
+    osc.frequency.setValueAtTime(base, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(base * 0.74, ctx.currentTime + 1.1);
+    gain.gain.setValueAtTime(0.002, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.032, ctx.currentTime + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.15);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 1.2);
+  }
+
+  /** Caída resonante de la lanza Dory sobre piedra y ceniza (Hito 3.3) */
+  playSpearDrop() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    [0, 0.14].forEach((offset, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(idx === 0 ? 480 : 320, ctx.currentTime + offset);
+      osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + offset + 0.18);
+      gain.gain.setValueAtTime(idx === 0 ? 0.18 : 0.1, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.24);
+    });
+  }
+
+  /** Acorde fúnebre para el quiebre final y cierre con título THE LAST SPARTAN */
+  playTragicClosingChord() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const notes = [146.83, 174.61, 220.0, 261.63]; // Dm7 sombrío
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx === 0 ? "triangle" : "sine";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+      gain.gain.setValueAtTime(0.002, ctx.currentTime + idx * 0.12);
+      gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + idx * 0.12 + 0.35);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 4.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.12);
+      osc.stop(ctx.currentTime + 4.3);
+    });
+  }
+
   fadeAmbient(durationMs = 1200) {
     this.clearTimers();
     if (this.ambientGain && this.ctx) {
