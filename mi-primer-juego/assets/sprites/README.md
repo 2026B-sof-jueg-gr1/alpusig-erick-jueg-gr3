@@ -21,15 +21,23 @@ Al agregar el archivo y declararlo en `src/config/assetsConfig.js`, Phaser carga
 | `pickup.png` | `pickup` | 24 x 24 px | Orbe curativo / mejora |
 | `ground.png` | `ground` | 1152 x 86 px | Suelo del escenario |
 
-### Texturas Narrativas (Escena 1):
+### Texturas de Campaña (Parte 1: El Precio de la Gloria):
 | Archivo | Clave (Key) | Dimensiones Sugeridas | Descripción |
 | :--- | :--- | :--- | :--- |
-| `blade_olympus.png` | `blade_olympus` | 44 x 130 px | Espada del Olimpo |
-| `blades_of_chaos.png` | `blades_of_chaos` | 64 x 40 px | Espadas del Caos con cadenas |
-| `kratos_kneeling.png` | `kratos_kneeling` | 64 x 84 px | Kratos arrodillado |
-| `kratos_fallen.png` | `kratos_fallen` | 92 x 46 px | Kratos desplomado |
-| `kratos_cave_sitting.png`| `kratos_cave_sitting`| 68 x 76 px | Kratos sentado con manto |
-| `campfire.png` | `campfire` | 48 x 36 px | Fogata de la cueva |
+| `spartan_unarmed.png` | `spartan_unarmed` | 54 x 78 px | Soldado espartano desarmado (hogar) |
+| `spartan_armed.png` | `spartan_armed` | 68 x 82 px | Soldado espartano con Lanza (Dory) y Escudo (Hoplón) |
+| `spartan_wounded.png` | `spartan_wounded` | 60 x 76 px | Soldado espartano herido (Estado 3) |
+| `spartan_wife.png` | `spartan_wife` | 48 x 74 px | Esposa del soldado |
+| `spartan_child_boy.png` | `spartan_child_boy` | 30 x 48 px | Hijo del soldado |
+| `spartan_child_girl.png` | `spartan_child_girl` | 30 x 46 px | Hija del soldado |
+| `toy_shield.png` | `toy_shield` | 24 x 24 px | Escudo de madera de juguete |
+| `spartan_general.png` | `spartan_general` | 66 x 88 px | General espartano con capa carmesí |
+| `spartan_ally.png` | `spartan_ally` | 60 x 80 px | Guerrero de la falange espartana |
+| `spartan_elder_guard.png` | `spartan_elder_guard` | 52 x 74 px | Anciano guardia del pórtico |
+| `spartan_scout_horse.png` | `spartan_scout_horse` | 104 x 78 px | Explorador herido a caballo |
+| `spartan_scout_fallen.png` | `spartan_scout_fallen` | 76 x 44 px | Explorador caído en la plaza |
+| `dory_spear.png` | `dory_spear` | 78 x 12 px | Lanza espartana (Dory) |
+| `hoplon_shield.png` | `hoplon_shield` | 36 x 36 px | Escudo espartano (Hoplón) |
 
 ---
 

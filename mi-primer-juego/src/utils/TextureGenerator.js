@@ -1,4 +1,4 @@
-import { WIDTH, GROUND_Y, COLORS } from "../config/constants.js";
+import { WIDTH, GROUND_Y, COLORS, SPARTA_COLORS } from "../config/constants.js";
 
 /**
  * Generador procedural de texturas en memoria usando Phaser.GameObjects.Graphics.
@@ -15,11 +15,17 @@ export class TextureGenerator {
   }
 
   static generateAll(scene) {
-    // ------------------------------------------------------------------------
-    // TEXTURAS DEL JUEGO BASE Y COMBATE
-    // ------------------------------------------------------------------------
+    this.generateCombatModeTextures(scene);
+    this.generateSpartanCharacters(scene);
+    this.generateSpartanEnvironment(scene);
+    this.generateComicPortraits(scene);
+    this.generateParticles(scene);
+  }
 
-    // 1. Jugador (Espartano activo)
+  // --------------------------------------------------------------------------
+  // TEXTURAS DEL MODO COMBATE LIBRE (GameScene)
+  // --------------------------------------------------------------------------
+  static generateCombatModeTextures(scene) {
     this.createTexture(scene, "player", 48, 72, (g) => {
       g.fillStyle(COLORS.steel).fillRoundedRect(9, 19, 30, 42, 7);
       g.fillStyle(COLORS.snow).fillCircle(24, 14, 13);
@@ -28,7 +34,6 @@ export class TextureGenerator {
       g.lineStyle(3, COLORS.gold).strokeLineShape(new Phaser.Geom.Line(34, 34, 47, 16));
     });
 
-    // 2. Lobo de hielo
     this.createTexture(scene, "wolf", 56, 38, (g) => {
       g.fillStyle(0xd6f2ff).fillEllipse(27, 22, 50, 25);
       g.fillStyle(0xb2d9ef).fillTriangle(8, 14, 16, 0, 23, 14);
@@ -36,7 +41,6 @@ export class TextureGenerator {
       g.fillStyle(COLORS.ice).fillCircle(40, 20, 3);
     });
 
-    // 3. Draugr (Guerrero no muerto)
     this.createTexture(scene, "draugr", 44, 68, (g) => {
       g.fillStyle(0x465b68).fillRoundedRect(5, 17, 34, 48, 8);
       g.fillStyle(0x9ab8c4).fillCircle(22, 12, 12);
@@ -44,7 +48,6 @@ export class TextureGenerator {
       g.fillStyle(COLORS.ice).fillRect(13, 10, 5, 3).fillRect(26, 10, 5, 3);
     });
 
-    // 4. Chamán
     this.createTexture(scene, "shaman", 46, 66, (g) => {
       g.fillStyle(0x596b94).fillTriangle(23, 0, 3, 63, 43, 63);
       g.fillStyle(0xd5f6ff).fillCircle(23, 19, 9);
@@ -52,7 +55,6 @@ export class TextureGenerator {
       g.fillStyle(COLORS.ice).fillCircle(39, 18, 6);
     });
 
-    // 5. Guardián del Hielo (Jefe 1)
     this.createTexture(scene, "guardian", 94, 112, (g) => {
       g.fillStyle(0x8ca9ba).fillRoundedRect(8, 29, 78, 75, 16);
       g.fillStyle(0xdff8ff).fillCircle(47, 25, 25);
@@ -61,153 +63,444 @@ export class TextureGenerator {
       g.lineStyle(5, COLORS.ice).strokeLineShape(new Phaser.Geom.Line(16, 53, 78, 53));
     });
 
-    // 6. Hacha Leviatán
     this.createTexture(scene, "axe", 70, 18, (g) => {
       g.lineStyle(5, COLORS.gold).strokeLineShape(new Phaser.Geom.Line(4, 14, 58, 5));
       g.fillStyle(COLORS.snow).fillTriangle(52, 2, 68, 0, 62, 15);
     });
 
-    // 7. Lanza Draupnir
     this.createTexture(scene, "spear", 72, 12, (g) => {
       g.lineStyle(4, COLORS.gold).strokeLineShape(new Phaser.Geom.Line(3, 9, 57, 3));
       g.fillStyle(COLORS.ice).fillTriangle(54, 0, 72, 2, 59, 11);
     });
 
-    // 8. Serpiente Mundial (Jefe Final)
     this.createTexture(scene, "serpent", 150, 74, (g) => {
       g.fillStyle(0x3d7188).fillEllipse(75, 40, 140, 52);
       g.fillStyle(COLORS.ice).fillCircle(48, 33, 6).fillCircle(103, 33, 6);
       g.lineStyle(4, COLORS.gold).strokeLineShape(new Phaser.Geom.Line(25, 50, 125, 50));
     });
 
-    // 9. Orbe de mejora (Pickup)
     this.createTexture(scene, "pickup", 24, 24, (g) => {
       g.fillStyle(COLORS.green).fillCircle(12, 12, 11);
       g.fillStyle(COLORS.snow).fillRect(9, 4, 6, 16).fillRect(4, 9, 16, 6);
     });
 
-    // 10. Suelo del escenario
     this.createTexture(scene, "ground", WIDTH, 86, (g) => {
       g.fillStyle(COLORS.deepBlue).fillRect(0, GROUND_Y + 14, WIDTH, 72);
       g.fillStyle(COLORS.ice).fillRect(0, GROUND_Y + 7, WIDTH, 7);
     });
+  }
 
-    // ------------------------------------------------------------------------
-    // TEXTURAS NARRATIVAS DE LA ESCENA 1 (EL ECO DE LA ESPERANZA)
-    // ------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // PERSONAJES Y EQUIPO EXCLUSIVO DE ESPARTA (PARTE 1: EL PRECIO DE LA GLORIA)
+  // --------------------------------------------------------------------------
+  static drawSpartanBody(g, offsetX, offsetY, { wounded = false } = {}) {
+    // Piernas y grebas de bronce
+    g.fillStyle(0xc68e62).fillRect(offsetX + 16, offsetY + 50, 8, 22);
+    g.fillStyle(0xc68e62).fillRect(offsetX + 28, offsetY + 50, 8, 22);
+    g.fillStyle(SPARTA_COLORS.bronze).fillRect(offsetX + 16, offsetY + 58, 8, 12);
+    g.fillStyle(SPARTA_COLORS.bronze).fillRect(offsetX + 28, offsetY + 58, 8, 12);
+    // Sandalias
+    g.fillStyle(0x5c3a21).fillRect(offsetX + 15, offsetY + 70, 11, 5);
+    g.fillStyle(0x5c3a21).fillRect(offsetX + 27, offsetY + 70, 11, 5);
 
-    // 11. Espada del Olimpo (Blade of Olympus)
-    this.createTexture(scene, "blade_olympus", 44, 130, (g) => {
-      // Pomo y empuñadura dorada
-      g.fillStyle(0xd4af37).fillCircle(22, 14, 8);
-      g.fillStyle(0x5a4d28).fillRect(19, 18, 6, 26);
-      // Guarda alada con gemas azules
-      g.fillStyle(0xd4af37).fillTriangle(22, 44, 4, 34, 40, 34);
-      g.fillStyle(0x22d3ee).fillCircle(22, 38, 5); // Joya brillante
-      // Hoja ancha de doble filo con resplandor celestial
-      g.fillStyle(0x93c5fd).fillTriangle(22, 126, 10, 48, 34, 48);
-      g.fillStyle(0x38bdf8).fillTriangle(22, 122, 16, 48, 28, 48);
-      // Runas grabadas en la hoja
-      g.lineStyle(2, 0xffffff).strokeLineShape(new Phaser.Geom.Line(22, 54, 22, 114));
-      g.lineStyle(1, 0x67e8f9).strokeLineShape(new Phaser.Geom.Line(18, 70, 26, 70));
-      g.lineStyle(1, 0x67e8f9).strokeLineShape(new Phaser.Geom.Line(19, 90, 25, 90));
+    // Túnica carmesí espartana + coraza de cuero/bronce ligero
+    g.fillStyle(wounded ? 0x6e1919 : SPARTA_COLORS.crimson).fillRoundedRect(offsetX + 12, offsetY + 24, 28, 34, 5);
+    g.fillStyle(0x6b4423).fillRect(offsetX + 12, offsetY + 42, 28, 6);
+    g.fillStyle(SPARTA_COLORS.bronzeLight).fillRect(offsetX + 23, offsetY + 42, 6, 6);
+
+    // Hombros y brazaletes
+    g.fillStyle(0xd69d70).fillRoundedRect(offsetX + 6, offsetY + 24, 8, 22, 3);
+    g.fillStyle(0xd69d70).fillRoundedRect(offsetX + 38, offsetY + 24, 8, 22, 3);
+    g.fillStyle(0x5c3a21).fillRect(offsetX + 6, offsetY + 38, 8, 6);
+    g.fillStyle(0x5c3a21).fillRect(offsetX + 38, offsetY + 38, 8, 6);
+
+    // Cabeza descubierta (soldado común en casa/guardia)
+    g.fillStyle(0xd69d70).fillCircle(offsetX + 26, offsetY + 14, 11);
+    g.fillStyle(0x2a1d17).fillEllipse(offsetX + 25, offsetY + 7, 22, 10);
+    g.fillStyle(0x2a1d17).fillRoundedRect(offsetX + 18, offsetY + 18, 16, 8, 3);
+    g.fillStyle(0x1a1412).fillCircle(offsetX + 30, offsetY + 13, 1.8);
+  }
+
+  static drawHoplon(g, cx, cy, radius = 16) {
+    g.fillStyle(SPARTA_COLORS.bronze).fillCircle(cx, cy, radius);
+    g.fillStyle(SPARTA_COLORS.crimson).fillCircle(cx, cy, radius - 3.5);
+    g.lineStyle(2, SPARTA_COLORS.bronzeLight).strokeCircle(cx, cy, radius - 1);
+    // Emblema Lambda (Λ)
+    g.lineStyle(2.5, SPARTA_COLORS.bronzeLight);
+    g.strokeLineShape(new Phaser.Geom.Line(cx - 5, cy + 5, cx, cy - 6));
+    g.strokeLineShape(new Phaser.Geom.Line(cx, cy - 6, cx + 5, cy + 5));
+  }
+
+  static drawDory(g, x1, y1, x2, y2) {
+    g.lineStyle(3.5, 0x6b4423).strokeLineShape(new Phaser.Geom.Line(x1, y1, x2, y2));
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const tipX = x2 + Math.cos(angle) * 11;
+    const tipY = y2 + Math.sin(angle) * 11;
+    const perpX = Math.cos(angle + Math.PI / 2) * 4;
+    const perpY = Math.sin(angle + Math.PI / 2) * 4;
+    g.fillStyle(SPARTA_COLORS.bronzeLight);
+    g.fillTriangle(x2 + perpX, y2 + perpY, tipX, tipY, x2 - perpX, y2 - perpY);
+  }
+
+  static generateSpartanCharacters(scene) {
+    // 1. Soldado desarmado (inicio de Escena 1 en la puerta de casa)
+    this.createTexture(scene, "spartan_unarmed", 54, 78, (g) => {
+      this.drawSpartanBody(g, 1, 2);
     });
 
-    // 12. Kratos arrodillado y atravesado (El Fin del Olimpo)
-    this.createTexture(scene, "kratos_kneeling", 64, 84, (g) => {
-      // Piernas y faldón espartano
-      g.fillStyle(0x451a1a).fillRect(16, 52, 32, 18);
-      g.fillStyle(0xd4af37).fillRect(20, 50, 24, 4); // Cinturón dorado
-      g.fillStyle(0xb0b8be).fillRect(14, 62, 12, 20); // Pierna arrodillada
-      g.fillStyle(0xb0b8be).fillRect(36, 58, 14, 24); // Pierna de apoyo
-      // Torso cenizo con musculatura
-      g.fillStyle(0xd2d7df).fillRoundedRect(16, 26, 32, 30, 6);
-      // Tatuaje rojo espartano distintivo
-      g.lineStyle(4, 0xcc1111).strokeLineShape(new Phaser.Geom.Line(20, 26, 34, 48));
-      // Cabeza rapada e inclinada de dolor
-      g.fillStyle(0xd2d7df).fillCircle(30, 18, 11);
-      g.fillStyle(0x1a1a1a).fillRoundedRect(24, 21, 14, 9, 3); // Barba espartana oscura
-      g.fillStyle(0xcc1111).fillRect(25, 12, 4, 8); // Tatuaje en la cabeza
-      // Manos sosteniendo la herida
-      g.fillStyle(0xb0b8be).fillRect(10, 40, 8, 16);
-      g.fillStyle(0xb0b8be).fillRect(44, 40, 8, 16);
-      // Mancha de sangre
-      g.fillStyle(0x8b0000).fillCircle(32, 45, 7);
+    // 2. Soldado armado con Lanza (Dory) y Escudo (Hoplón)
+    this.createTexture(scene, "spartan_armed", 68, 82, (g) => {
+      // Capa corta al hombro
+      g.fillStyle(0x7a1212).fillTriangle(12, 26, 26, 26, 8, 58);
+      this.drawSpartanBody(g, 6, 4);
+      // Lanza Dory sostenida en mano derecha en diagonal hacia arriba
+      this.drawDory(g, 42, 70, 56, 14);
+      // Escudo Hoplón al brazo izquierdo
+      this.drawHoplon(g, 33, 44, 15);
     });
 
-    // 13. Kratos desplomado en el suelo
-    this.createTexture(scene, "kratos_fallen", 92, 46, (g) => {
-      // Cuerpo horizontal sobre el mármol
-      g.fillStyle(0xd2d7df).fillRoundedRect(22, 14, 46, 22, 6); // Torso
-      g.fillStyle(0x451a1a).fillRect(62, 16, 20, 18); // Faldón
-      g.fillStyle(0xb0b8be).fillRect(74, 18, 16, 12); // Piernas estiradas
-      g.fillStyle(0xd2d7df).fillCircle(15, 23, 10); // Cabeza
-      g.fillStyle(0x1a1a1a).fillRect(12, 27, 8, 6); // Barba
-      g.lineStyle(3, 0xcc1111).strokeLineShape(new Phaser.Geom.Line(26, 16, 42, 28)); // Tatuaje
-      // Charco de sangre
-      g.fillStyle(0x7f1d1d).fillEllipse(44, 38, 70, 12);
+    // 3. Soldado herido sin escudo (Estado 3 - listo para Escena 2.3 / 3)
+    this.createTexture(scene, "spartan_wounded", 60, 76, (g) => {
+      this.drawSpartanBody(g, 4, 2, { wounded: true });
+      // Mancha de herida y mano sujetándose el costado
+      g.fillStyle(0x880808).fillCircle(24, 40, 5);
+      // Lanza usada como apoyo
+      this.drawDory(g, 46, 74, 42, 12);
     });
 
-    // 14. Partícula de La Esperanza (Ethereal Hope Mote)
-    this.createTexture(scene, "hope_particle", 20, 20, (g) => {
-      g.fillStyle(0x06b6d4, 0.3).fillCircle(10, 10, 10);
-      g.fillStyle(0x38bdf8, 0.7).fillCircle(10, 10, 6);
-      g.fillStyle(0xffffff, 1).fillCircle(10, 10, 2.5);
+    // 4. Esposa sin escudo (tras entregarlo)
+    this.createTexture(scene, "spartan_wife", 48, 74, (g) => {
+      // Peplos griego color crema y ocre
+      g.fillStyle(0xf0e4ce).fillRoundedRect(12, 24, 24, 46, 6);
+      g.fillStyle(0xd99b43).fillRect(14, 24, 20, 14);
+      g.fillStyle(SPARTA_COLORS.terracotta).fillRect(14, 38, 20, 4);
+      // Cabeza y cabello recogido
+      g.fillStyle(0x3a241b).fillCircle(21, 13, 10);
+      g.fillStyle(0xe2b189).fillCircle(25, 14, 9);
+      g.fillStyle(0x3a241b).fillEllipse(24, 8, 18, 8);
+      // Sonrisa cálida
+      g.fillStyle(0x1a1412).fillCircle(28, 13, 1.4);
+      g.lineStyle(1.5, 0x8c3b2b).strokeLineShape(new Phaser.Geom.Line(26, 17, 30, 16.5));
+      // Brazos extendidos con calidez
+      g.fillStyle(0xe2b189).fillRect(28, 28, 11, 5);
     });
 
-    // 15. Partícula de ceniza volcánica
-    this.createTexture(scene, "ash_flake", 8, 8, (g) => {
-      g.fillStyle(0x9ca3af, 0.75).fillCircle(4, 4, 3);
+    // 5. Esposa sosteniendo el Escudo Hoplón antes de entregarlo
+    this.createTexture(scene, "spartan_wife_shield", 56, 74, (g) => {
+      g.fillStyle(0xf0e4ce).fillRoundedRect(10, 24, 24, 46, 6);
+      g.fillStyle(0xd99b43).fillRect(12, 24, 20, 14);
+      g.fillStyle(SPARTA_COLORS.terracotta).fillRect(12, 38, 20, 4);
+      g.fillStyle(0x3a241b).fillCircle(19, 13, 10);
+      g.fillStyle(0xe2b189).fillCircle(23, 14, 9);
+      g.fillStyle(0x3a241b).fillEllipse(22, 8, 18, 8);
+      g.fillStyle(0x1a1412).fillCircle(26, 13, 1.4);
+      this.drawHoplon(g, 37, 40, 14);
     });
 
-    // 16. Columna griega del Olimpo en ruinas
-    this.createTexture(scene, "olympus_column", 44, 160, (g) => {
-      g.fillStyle(0xe2e8f0).fillRect(6, 16, 32, 134);
-      g.fillStyle(0xcfd8e3).fillRect(2, 0, 40, 16); // Capitel
-      g.fillStyle(0xcfd8e3).fillRect(2, 148, 40, 12); // Base
-      // Estrías / líneas de columna
-      g.lineStyle(1, 0x94a3b8).strokeLineShape(new Phaser.Geom.Line(14, 16, 14, 148));
-      g.lineStyle(1, 0x94a3b8).strokeLineShape(new Phaser.Geom.Line(22, 16, 22, 148));
-      g.lineStyle(1, 0x94a3b8).strokeLineShape(new Phaser.Geom.Line(30, 16, 30, 148));
-      // Grietas de destrucción
-      g.lineStyle(2, 0x475569).strokeLineShape(new Phaser.Geom.Line(6, 40, 20, 55));
-      g.lineStyle(2, 0x475569).strokeLineShape(new Phaser.Geom.Line(20, 55, 14, 75));
+    // 6. Hijo e Hija
+    this.createTexture(scene, "spartan_child_boy", 32, 48, (g) => {
+      g.fillStyle(0xd69d70).fillRect(10, 34, 4, 12).fillRect(18, 34, 4, 12);
+      g.fillStyle(0x9c7b56).fillRoundedRect(7, 17, 18, 20, 4);
+      g.fillStyle(0xd69d70).fillCircle(16, 11, 7);
+      g.fillStyle(0x3a241b).fillEllipse(16, 6, 14, 6);
     });
 
-    // 17. Kratos sentado en la cueva (desgastado con manto)
-    this.createTexture(scene, "kratos_cave_sitting", 68, 76, (g) => {
-      // Manto desgastado cubriendo hombros y cuerpo
-      g.fillStyle(0x3a332d).fillRoundedRect(12, 18, 44, 52, 12);
-      g.fillStyle(0x28231e).fillTriangle(8, 68, 30, 24, 52, 68);
-      // Cabeza cansada asomando
-      g.fillStyle(0xc0c6cf).fillCircle(34, 16, 10);
-      g.fillStyle(0x18181b).fillRect(29, 18, 12, 9); // Barba larga
-      g.lineStyle(2, 0x991b1b).strokeLineShape(new Phaser.Geom.Line(30, 10, 36, 18)); // Tatuaje desvanecido
-      // Vendas en las manos
-      g.fillStyle(0x9ca3af).fillRect(18, 46, 10, 12);
+    this.createTexture(scene, "spartan_child_girl", 32, 46, (g) => {
+      g.fillStyle(0xe2b189).fillRect(10, 34, 4, 11).fillRect(18, 34, 4, 11);
+      g.fillStyle(0xc86446).fillTriangle(16, 15, 5, 36, 27, 36);
+      g.fillStyle(0xe2b189).fillCircle(16, 11, 7);
+      g.fillStyle(0x42291e).fillCircle(14, 10, 7);
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillRect(10, 5, 10, 3);
     });
 
-    // 18. Espadas del Caos sobre roca
-    this.createTexture(scene, "blades_of_chaos", 64, 40, (g) => {
-      // Hojas curvas con runas ardientes
-      g.fillStyle(0x52525b).fillTriangle(8, 28, 32, 12, 30, 36);
-      g.fillStyle(0x52525b).fillTriangle(34, 12, 58, 28, 36, 36);
-      // Runas rojas / fuego
-      g.lineStyle(2, 0xef4444).strokeLineShape(new Phaser.Geom.Line(14, 26, 28, 16));
-      g.lineStyle(2, 0xef4444).strokeLineShape(new Phaser.Geom.Line(40, 16, 52, 26));
-      // Cadenas enrolladas
-      g.lineStyle(2, 0xca8a04).strokeLineShape(new Phaser.Geom.Line(24, 28, 42, 28));
-      g.lineStyle(2, 0xca8a04).strokeLineShape(new Phaser.Geom.Line(28, 32, 38, 32));
+    // 7. Pequeño escudo de madera de juguete (en el suelo junto a los niños)
+    this.createTexture(scene, "toy_shield", 26, 26, (g) => {
+      g.fillStyle(0x7c502b).fillCircle(13, 13, 11);
+      g.lineStyle(2.5, 0xa87444).strokeCircle(13, 13, 10);
+      g.lineStyle(2, 0xc82323);
+      g.strokeLineShape(new Phaser.Geom.Line(9, 17, 13, 9));
+      g.strokeLineShape(new Phaser.Geom.Line(13, 9, 17, 17));
     });
 
-    // 19. Fogata de cueva (ascuas casi extintas)
-    this.createTexture(scene, "campfire", 48, 36, (g) => {
-      // Troncos de madera cruzados
-      g.fillStyle(0x3f2e21).fillRect(8, 26, 32, 6);
-      g.fillStyle(0x2e1f14).fillRect(14, 20, 20, 6);
-      // Ascuas y brasas
-      g.fillStyle(0xea580c).fillCircle(24, 22, 8);
-      g.fillStyle(0xfacc15).fillCircle(24, 20, 4);
+    // 8. Props independientes: Lanza Dory y Escudo Hoplón
+    this.createTexture(scene, "dory_spear", 84, 14, (g) => {
+      this.drawDory(g, 4, 7, 70, 7);
+    });
+    this.createTexture(scene, "hoplon_shield", 38, 38, (g) => {
+      this.drawHoplon(g, 19, 19, 16);
+    });
+
+    // 9. El General (imponente, capa carmesí intacta, armadura ornamentada, penacho)
+    this.createTexture(scene, "spartan_general", 68, 90, (g) => {
+      // Capa carmesí amplia
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillTriangle(26, 26, 56, 28, 6, 82);
+      g.fillStyle(0x7a1212).fillTriangle(26, 26, 40, 28, 12, 76);
+      // Piernas con grebas doradas
+      g.fillStyle(0xc68e62).fillRect(22, 60, 8, 24).fillRect(36, 60, 8, 24);
+      g.fillStyle(SPARTA_COLORS.bronzeLight).fillRect(22, 66, 8, 16).fillRect(36, 66, 8, 16);
+      // Coraza muscular ornamentada de bronce dorado
+      g.fillStyle(SPARTA_COLORS.bronze).fillRoundedRect(18, 28, 30, 32, 6);
+      g.lineStyle(2, SPARTA_COLORS.bronzeLight).strokeRect(21, 32, 24, 18);
+      g.fillStyle(SPARTA_COLORS.crimson).fillRect(18, 54, 30, 10);
+      // Casco corintio con gran penacho transversal carmesí
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(33, 7, 26, 11);
+      g.fillStyle(SPARTA_COLORS.bronzeLight).fillCircle(33, 18, 11);
+      g.fillStyle(0x2a1d17).fillRect(24, 16, 7, 6); // Visor oscuro
+      // Lanza dorada del General
+      this.drawDory(g, 52, 84, 54, 12);
+    });
+
+    // 10. Soldado de la falange espartana (aliado en plaza)
+    this.createTexture(scene, "spartan_ally", 60, 82, (g) => {
+      g.fillStyle(SPARTA_COLORS.crimson).fillTriangle(20, 26, 36, 26, 10, 68);
+      g.fillStyle(0xc68e62).fillRect(19, 54, 7, 22).fillRect(31, 54, 7, 22);
+      g.fillStyle(SPARTA_COLORS.bronze).fillRoundedRect(16, 26, 26, 28, 5);
+      // Casco corintio con cresta
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(29, 8, 18, 8);
+      g.fillStyle(SPARTA_COLORS.bronze).fillCircle(29, 17, 10);
+      g.fillStyle(0x231a16).fillRect(21, 16, 6, 5);
+      this.drawDory(g, 44, 76, 48, 10);
+      this.drawHoplon(g, 24, 44, 14);
+    });
+
+    // 11. Anciano guardia del pórtico
+    this.createTexture(scene, "spartan_elder_guard", 52, 74, (g) => {
+      g.fillStyle(0x6e6254).fillRoundedRect(14, 24, 24, 44, 6);
+      g.fillStyle(SPARTA_COLORS.crimson).fillRect(14, 24, 24, 8);
+      g.fillStyle(0xd0a27a).fillCircle(26, 14, 10);
+      g.fillStyle(0xe5e7eb).fillRoundedRect(19, 17, 14, 12, 4); // Barba blanca
+      g.fillStyle(0xe5e7eb).fillEllipse(26, 6, 18, 6);
+      this.drawDory(g, 41, 70, 42, 16);
+    });
+
+    // 12. Aldeanos pacíficos
+    this.createTexture(scene, "spartan_villager", 46, 72, (g) => {
+      g.fillStyle(0xc8b89a).fillRoundedRect(12, 22, 22, 44, 6);
+      g.fillStyle(0xd69d70).fillCircle(23, 13, 9);
+      g.fillStyle(0x4b3428).fillEllipse(23, 7, 18, 6);
+      // Ánfora de barro sobre el hombro
+      g.fillStyle(SPARTA_COLORS.terracotta).fillEllipse(34, 22, 14, 18);
+      g.fillStyle(0x8c3f26).fillRect(31, 11, 6, 4);
+    });
+
+    this.createTexture(scene, "spartan_blacksmith", 50, 74, (g) => {
+      g.fillStyle(0x6b4f3a).fillRoundedRect(12, 23, 26, 46, 5);
+      g.fillStyle(0xd69d70).fillCircle(25, 13, 10);
+      g.fillStyle(0x2a1d17).fillRoundedRect(18, 17, 14, 7, 3);
+      // Martillo de forja
+      g.lineStyle(3, 0x4b3428).strokeLineShape(new Phaser.Geom.Line(36, 44, 45, 28));
+      g.fillStyle(0x64748b).fillRect(40, 22, 10, 7);
+    });
+
+    // 13. Explorador herido a caballo y explorador caído
+    this.createTexture(scene, "spartan_scout_horse", 112, 82, (g) => {
+      // Caballo castaño galopando hacia la izquierda
+      g.fillStyle(0x5c361e).fillEllipse(58, 48, 68, 28);
+      g.fillStyle(0x472815).fillTriangle(26, 40, 12, 24, 28, 20); // Cuello y cabeza
+      g.fillStyle(0x2e190c).fillRect(26, 20, 12, 18); // Crin
+      // Patas en galope
+      g.lineStyle(5, 0x472815);
+      g.strokeLineShape(new Phaser.Geom.Line(34, 58, 18, 76));
+      g.strokeLineShape(new Phaser.Geom.Line(44, 58, 38, 78));
+      g.strokeLineShape(new Phaser.Geom.Line(74, 58, 88, 76));
+      g.strokeLineShape(new Phaser.Geom.Line(84, 56, 98, 70));
+      // Cola
+      g.fillStyle(0x2e190c).fillTriangle(90, 44, 110, 56, 94, 56);
+      // Jinete espartano herido inclinado
+      g.fillStyle(0x881337).fillRoundedRect(46, 16, 22, 26, 5);
+      g.fillStyle(0xd69d70).fillCircle(50, 12, 8);
+      g.fillStyle(0x991b1b).fillCircle(56, 26, 5); // Herida de flecha/sangre
+    });
+
+    this.createTexture(scene, "spartan_scout_fallen", 76, 46, (g) => {
+      g.fillStyle(0x881337).fillRoundedRect(14, 16, 34, 20, 5);
+      g.fillStyle(0xc68e62).fillRect(44, 24, 24, 12);
+      g.fillStyle(0xd69d70).fillCircle(14, 18, 9);
+      g.fillStyle(0x991b1b).fillCircle(28, 24, 6);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // ENTORNO DE ESPARTA (HOGAR, SENDEROS, PÓRTICO Y PLAZA)
+  // --------------------------------------------------------------------------
+  static generateSpartanEnvironment(scene) {
+    // Suelo de sendero de tierra cálida y piedra
+    this.createTexture(scene, "spartan_ground", 512, 100, (g) => {
+      g.fillStyle(SPARTA_COLORS.earthDark).fillRect(0, 16, 512, 84);
+      g.fillStyle(SPARTA_COLORS.sandPath).fillRect(0, 8, 512, 12);
+      g.fillStyle(SPARTA_COLORS.oliveLeaf).fillRect(0, 4, 512, 5);
+      // Piedras y texturas sutiles en el camino
+      g.fillStyle(0x9b7b4e);
+      for (let i = 0; i < 14; i++) {
+        g.fillRoundedRect((i * 39) % 490, 20 + (i % 4) * 14, 18 + (i % 3) * 8, 6, 2);
+      }
+    });
+
+    // Suelo empedrado de la plaza de armas
+    this.createTexture(scene, "plaza_ground", 512, 100, (g) => {
+      g.fillStyle(0x635d54).fillRect(0, 10, 512, 90);
+      g.fillStyle(0xb5a895).fillRect(0, 4, 512, 10);
+      g.lineStyle(2, 0x4b463f);
+      for (let i = 0; i < 8; i++) {
+        g.strokeRect(i * 64, 10, 64, 24);
+      }
+    });
+
+    // Casa del Soldado (con puerta abierta, techo de tejas, escudo decorativo)
+    this.createTexture(scene, "spartan_house", 240, 190, (g) => {
+      // Muros de piedra cálida
+      g.fillStyle(SPARTA_COLORS.limestone).fillRect(20, 64, 200, 126);
+      g.fillStyle(0xd2c4aa).fillRect(20, 166, 200, 24);
+      // Techo de terracota
+      g.fillStyle(SPARTA_COLORS.terracotta).fillTriangle(4, 68, 120, 12, 236, 68);
+      g.lineStyle(3, 0x8c3f26).strokeTriangle(4, 68, 120, 12, 236, 68);
+      // Puerta principal de madera
+      g.fillStyle(0x52341e).fillRoundedRect(54, 102, 52, 88, { tl: 8, tr: 8, bl: 0, br: 0 });
+      g.fillStyle(0x3a2414).fillRect(60, 108, 40, 82);
+      // Ventana con postigo
+      g.fillStyle(0x4a3120).fillRect(144, 96, 44, 42);
+      g.fillStyle(0xf6d38b, 0.45).fillRect(150, 102, 32, 30);
+    });
+
+    // Casa de aldeano para el camino
+    this.createTexture(scene, "spartan_village_house", 200, 165, (g) => {
+      g.fillStyle(0xded1b8).fillRect(16, 56, 168, 109);
+      g.fillStyle(SPARTA_COLORS.terracotta).fillTriangle(4, 60, 100, 10, 196, 60);
+      g.fillStyle(0x5a3a22).fillRect(80, 98, 40, 67);
+      g.fillStyle(0x4a3120).fillRect(36, 86, 28, 28);
+      g.fillStyle(0x4a3120).fillRect(136, 86, 28, 28);
+    });
+
+    // Árbol de olivo mediterráneo
+    this.createTexture(scene, "olive_tree", 114, 164, (g) => {
+      g.fillStyle(0x59412c).fillRect(48, 86, 18, 78);
+      g.fillStyle(0x59412c).fillTriangle(48, 96, 26, 68, 56, 88);
+      g.fillStyle(0x59412c).fillTriangle(64, 96, 88, 68, 58, 88);
+      g.fillStyle(SPARTA_COLORS.oliveDark).fillCircle(57, 62, 38);
+      g.fillStyle(SPARTA_COLORS.oliveLeaf).fillCircle(38, 54, 26);
+      g.fillStyle(SPARTA_COLORS.oliveLeaf).fillCircle(76, 56, 25);
+      g.fillStyle(0x739652).fillCircle(56, 38, 26);
+    });
+
+    // Pozo del pueblo
+    this.createTexture(scene, "spartan_well", 74, 70, (g) => {
+      g.fillStyle(0x8b8275).fillRoundedRect(10, 36, 54, 34, 4);
+      g.fillStyle(0x5c3a21).fillRect(14, 10, 6, 30).fillRect(54, 10, 6, 30);
+      g.fillStyle(SPARTA_COLORS.terracotta).fillTriangle(6, 14, 37, 0, 68, 14);
+    });
+
+    // Pórtico de vigilancia (puesto que el protagonista debe cuidar)
+    this.createTexture(scene, "watchpost_arch", 176, 196, (g) => {
+      // Columnas de piedra
+      g.fillStyle(0xb5a68e).fillRect(16, 46, 28, 150);
+      g.fillStyle(0xb5a68e).fillRect(132, 46, 28, 150);
+      // Dintel superior y almenas
+      g.fillStyle(0x9e8f77).fillRect(4, 24, 168, 30);
+      g.fillStyle(0xb5a68e).fillRect(12, 8, 28, 16).fillRect(74, 8, 28, 16).fillRect(136, 8, 28, 16);
+      // Escudo ceremonial central en el arco
+      this.drawHoplon(g, 88, 39, 13);
+    });
+
+    // Estandarte espartano (Lambda)
+    this.createTexture(scene, "spartan_banner", 40, 138, (g) => {
+      g.fillStyle(0x5c3a21).fillRect(18, 12, 4, 126);
+      g.fillStyle(SPARTA_COLORS.bronzeLight).fillTriangle(20, 0, 14, 14, 26, 14);
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillRect(6, 22, 28, 66);
+      g.fillStyle(SPARTA_COLORS.crimson).fillTriangle(6, 88, 20, 74, 34, 88);
+      g.lineStyle(2.5, SPARTA_COLORS.bronzeLight);
+      g.strokeLineShape(new Phaser.Geom.Line(13, 62, 20, 42));
+      g.strokeLineShape(new Phaser.Geom.Line(20, 42, 27, 62));
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // RETRATOS PARA VIÑETAS DE CÓMIC
+  // --------------------------------------------------------------------------
+  static generateComicPortraits(scene) {
+    // Retrato Esposa sonriendo
+    this.createTexture(scene, "portrait_wife", 72, 72, (g) => {
+      g.fillStyle(0xf3d499).fillRect(0, 0, 72, 72);
+      g.fillStyle(0xd99b43).fillCircle(36, 72, 26);
+      g.fillStyle(0x3a241b).fillCircle(33, 30, 18);
+      g.fillStyle(0xe2b189).fillCircle(37, 32, 16);
+      g.fillStyle(0x3a241b).fillEllipse(36, 20, 32, 14);
+      g.fillStyle(0x1a1412).fillCircle(33, 31, 2).fillCircle(43, 31, 2);
+      g.lineStyle(2, 0x8c3b2b).strokeLineShape(new Phaser.Geom.Line(33, 39, 41, 39));
+    });
+
+    // Retrato Soldado determinado / golpeando pecho
+    this.createTexture(scene, "portrait_soldier", 72, 72, (g) => {
+      g.fillStyle(0xd8c3a5).fillRect(0, 0, 72, 72);
+      g.fillStyle(SPARTA_COLORS.crimson).fillCircle(36, 74, 28);
+      g.fillStyle(0xd69d70).fillCircle(36, 32, 17);
+      g.fillStyle(0x2a1d17).fillEllipse(36, 18, 34, 14);
+      g.fillStyle(0x2a1d17).fillRoundedRect(24, 36, 24, 13, 5);
+      // Cejas decididas
+      g.lineStyle(2.5, 0x1a1412);
+      g.strokeLineShape(new Phaser.Geom.Line(27, 26, 34, 28));
+      g.strokeLineShape(new Phaser.Geom.Line(45, 26, 38, 28));
+      g.fillStyle(0x1a1412).fillCircle(31, 30, 2).fillCircle(41, 30, 2);
+    });
+
+    // Retrato Soldado pensativo (mirando el horizonte)
+    this.createTexture(scene, "portrait_soldier_thought", 72, 72, (g) => {
+      g.fillStyle(0xb6c7d6).fillRect(0, 0, 72, 72);
+      g.fillStyle(SPARTA_COLORS.crimson).fillCircle(30, 74, 28);
+      g.fillStyle(0xd69d70).fillCircle(34, 33, 17);
+      g.fillStyle(0x2a1d17).fillEllipse(33, 19, 32, 14);
+      g.fillStyle(0x2a1d17).fillRoundedRect(26, 38, 20, 12, 4);
+      g.fillStyle(0x1a1412).fillCircle(42, 31, 2);
+      g.lineStyle(2, 0x4b3428).strokeLineShape(new Phaser.Geom.Line(37, 26, 46, 26));
+    });
+
+    // Retrato General: mirada fiera
+    this.createTexture(scene, "portrait_general_fierce", 72, 72, (g) => {
+      g.fillStyle(0x6b1414).fillRect(0, 0, 72, 72);
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(36, 10, 44, 16);
+      g.fillStyle(SPARTA_COLORS.bronzeLight).fillRoundedRect(18, 18, 36, 42, 12);
+      g.fillStyle(0x1a1412).fillRect(24, 30, 24, 10);
+      g.fillStyle(0xffffff).fillCircle(30, 35, 2.2).fillCircle(42, 35, 2.2);
+      g.lineStyle(2.5, 0x1a1412);
+      g.strokeLineShape(new Phaser.Geom.Line(25, 29, 34, 33));
+      g.strokeLineShape(new Phaser.Geom.Line(47, 29, 38, 33));
+    });
+
+    // Retrato General: frunciendo el ceño
+    this.createTexture(scene, "portrait_general_frown", 72, 72, (g) => {
+      g.fillStyle(0x4b3a32).fillRect(0, 0, 72, 72);
+      g.fillStyle(SPARTA_COLORS.crimson).fillEllipse(36, 10, 40, 14);
+      g.fillStyle(SPARTA_COLORS.bronze).fillRoundedRect(18, 18, 36, 42, 12);
+      g.fillStyle(0x1a1412).fillRect(24, 31, 24, 9);
+      g.fillStyle(0xffe49e).fillCircle(30, 35, 2).fillCircle(42, 35, 2);
+      g.lineStyle(2.5, 0x1a1412).strokeLineShape(new Phaser.Geom.Line(28, 49, 44, 49));
+    });
+
+    // Retrato General: sonrisa arrogante
+    this.createTexture(scene, "portrait_general_smirk", 72, 72, (g) => {
+      g.fillStyle(0x523018).fillRect(0, 0, 72, 72);
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(36, 10, 42, 15);
+      g.fillStyle(SPARTA_COLORS.bronzeLight).fillRoundedRect(18, 18, 36, 42, 12);
+      g.fillStyle(0x1a1412).fillRect(24, 30, 24, 9);
+      g.fillStyle(0xffffff).fillCircle(30, 34, 2).fillCircle(42, 34, 2);
+      g.lineStyle(2, 0x1a1412).strokeLineShape(new Phaser.Geom.Line(30, 49, 44, 45));
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // PARTÍCULAS AMBIENTALES
+  // --------------------------------------------------------------------------
+  static generateParticles(scene) {
+    this.createTexture(scene, "sun_mote", 10, 10, (g) => {
+      g.fillStyle(0xffe9a3, 0.45).fillCircle(5, 5, 5);
+      g.fillStyle(0xffffff, 0.9).fillCircle(5, 5, 2);
+    });
+
+    this.createTexture(scene, "dust_puff", 18, 18, (g) => {
+      g.fillStyle(0xd9c29c, 0.75).fillCircle(9, 9, 8);
+    });
+
+    this.createTexture(scene, "olive_leaf", 10, 6, (g) => {
+      g.fillStyle(SPARTA_COLORS.oliveLeaf).fillEllipse(5, 3, 10, 5);
     });
   }
 }

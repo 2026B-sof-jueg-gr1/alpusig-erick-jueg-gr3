@@ -3,8 +3,8 @@ import { addBackground, addTitle } from "../ui/UIHelper.js";
 
 /**
  * Escena del Menú Principal.
- * Muestra el título, la ambientación y los accesos para iniciar la Campaña (Escena 1)
- * o ingresar directamente al modo combate de acción.
+ * Presenta el título, la Parte 1 de la historia ('El Precio de la Gloria')
+ * y los accesos para iniciar la Campaña o el modo de combate libre.
  */
 export class MenuScene extends Phaser.Scene {
   constructor() {
@@ -15,10 +15,10 @@ export class MenuScene extends Phaser.Scene {
     addBackground(this);
     addTitle(this, "THE LAST SPARTAN", 160);
 
-    this.add.text(WIDTH / 2, 235, "La última defensa del invierno eterno", {
-      fontFamily: "Georgia",
-      fontSize: "22px",
-      color: "#b8dcf2"
+    this.add.text(WIDTH / 2, 235, "Parte 1: El Precio de la Gloria", {
+      fontFamily: "Georgia, serif",
+      fontSize: "23px",
+      color: "#f4c542"
     }).setOrigin(0.5);
 
     // Botón Principal: Iniciar Campaña Narrativa (Escena 1)
@@ -50,7 +50,7 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(
       WIDTH / 2,
       515,
-      "A / D: moverse   •   W o ESPACIO: saltar   •   J: atacar   •   P: pausa",
+      "A / D o Flechas: moverse   •   E: interactuar   •   J: postura / ataque   •   P: pausa",
       { fontFamily: "Arial", fontSize: "15px", color: "#eaf4ff" }
     ).setOrigin(0.5);
   }
