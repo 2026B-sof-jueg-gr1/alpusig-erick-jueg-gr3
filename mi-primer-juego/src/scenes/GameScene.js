@@ -137,7 +137,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyManager.update(time, this.player);
 
     // Limpieza de lanzas fuera de pantalla
-    this.spears.children.each((spear) => {
+    this.spears.getChildren().forEach((spear) => {
       if (spear.active && (spear.x < -80 || spear.x > WIDTH + 80)) {
         spear.destroy();
       }
@@ -173,7 +173,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     let hit = false;
-    this.enemies.children.each((enemy) => {
+    this.enemies.getChildren().forEach((enemy) => {
       if (!enemy.active || !Phaser.Geom.Intersects.RectangleToRectangle(hitbox, enemy.getBounds())) return;
       
       hit = true;
@@ -249,7 +249,7 @@ export class GameScene extends Phaser.Scene {
 
     activeSpears.forEach((spear) => {
       this.createExplosion(spear.x, spear.y);
-      this.enemies.children.each((enemy) => {
+      this.enemies.getChildren().forEach((enemy) => {
         if (!enemy.active || Phaser.Math.Distance.Between(spear.x, spear.y, enemy.x, enemy.y) > 125) return;
         const damage = this.progression.getAttackDamage(55) + this.progression.explosionBonus;
         if (enemy.bossController) {

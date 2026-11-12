@@ -305,6 +305,289 @@ export class AudioManager {
     }
   }
 
+  // ==========================================================================
+  // SONIDOS DE ESCENA 2: EL BARRO, LA LANZA Y LA CAÍDA
+  // ==========================================================================
+
+  /** Lluvia intensa, viento del desfiladero y pulso heroico-tenso inicial */
+  playBattleRainAmbient() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    this.stopAmbient();
+
+    const bufferSize = ctx.sampleRate * 2;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const rain = ctx.createBufferSource();
+    rain.buffer = noiseBuffer;
+    rain.loop = true;
+
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = "bandpass";
+    bandpass.frequency.setValueAtTime(1150, ctx.currentTime);
+    bandpass.Q.setValueAtTime(0.6, ctx.currentTime);
+
+    const rainGain = ctx.createGain();
+    rainGain.gain.setValueAtTime(0.01, ctx.currentTime);
+    rainGain.gain.linearRampToValueAtTime(0.11, ctx.currentTime + 1.2);
+
+    rain.connect(bandpass);
+    bandpass.connect(rainGain);
+    rainGain.connect(ctx.destination);
+    rain.start();
+
+    this.ambientGain = rainGain;
+    this.ambientNodes.push(rain, bandpass, rainGain);
+
+    // Pulso marcial heroico sutil al comienzo de Hito 2.1
+    const warPulseTimer = this.scene.time.addEvent({
+      delay: 900,
+      loop: true,
+      callback: () => this.playWarDrums(1)
+    });
+    this.activeTimers.push(warPulseTimer);
+  }
+
+  /** Cambio de tono a música grave y disonante (Trigger 2: "¡nos tendieron una trampa!") */
+  playDissonantBattleShift() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    this.clearTimers();
+
+    // Dron grave disonante (tritono + semitono)
+    [73.42, 103.83, 77.78].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(240, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.002, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.055, ctx.currentTime + 1.4);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      this.ambientNodes.push(osc, filter, gain);
+    });
+  }
+
+  playSpearThrust(step = 1) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    const startFreq = 320 + step * 55;
+    osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(95, ctx.currentTime + 0.13);
+    gain.gain.setValueAtTime(0.16, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.16);
+  }
+
+  playHeavySweep() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(240, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.28);
+    gain.gain.setValueAtTime(0.22, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.32);
+  }
+
+  playShieldBlock() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    [680, 990].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = idx === 0 ? "triangle" : "sine";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.65, ctx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.14, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.22);
+    });
+  }
+
+  playShieldBash() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(160, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(48, ctx.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+  }
+
+  playBackstabImpact() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(140, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(32, ctx.currentTime + 0.42);
+    gain.gain.setValueAtTime(0.32, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.48);
+  }
+
+  /** Sonido amortiguado de latidos y respiración ahogada (Hito 2.2 y 2.3) */
+  playHeartbeatAndBreath(periodMs = 1100) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+    this.stopAmbient();
+
+    // Fondo sordo amortiguado
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(52, ctx.currentTime);
+    gain.gain.setValueAtTime(0.04, ctx.currentTime);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    this.ambientGain = gain;
+    this.ambientNodes.push(osc, gain);
+
+    const beatOnce = () => {
+      const c = this.ensureContext();
+      if (!c) return;
+      [0, 0.22].forEach((offset, idx) => {
+        const bOsc = c.createOscillator();
+        const bGain = c.createGain();
+        bOsc.type = "sine";
+        bOsc.frequency.setValueAtTime(idx === 0 ? 74 : 62, c.currentTime + offset);
+        bOsc.frequency.exponentialRampToValueAtTime(34, c.currentTime + offset + 0.16);
+        bGain.gain.setValueAtTime(idx === 0 ? 0.28 : 0.2, c.currentTime + offset);
+        bGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + offset + 0.18);
+        bOsc.connect(bGain);
+        bGain.connect(c.destination);
+        bOsc.start(c.currentTime + offset);
+        bOsc.stop(c.currentTime + offset + 0.2);
+      });
+    };
+
+    beatOnce();
+    const heartTimer = this.scene.time.addEvent({
+      delay: periodMs,
+      loop: true,
+      callback: beatOnce
+    });
+    this.activeTimers.push(heartTimer);
+  }
+
+  playGeneralImpale() {
+    this.playBackstabImpact();
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    // Acorde trágico descendente
+    [220, 196, 146.83].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.14);
+      gain.gain.setValueAtTime(0.11, ctx.currentTime + idx * 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.14 + 1.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.14);
+      osc.stop(ctx.currentTime + idx * 0.14 + 1.25);
+    });
+  }
+
+  playArrowWhistle() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1450, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(580, ctx.currentTime + 0.35);
+    gain.gain.setValueAtTime(0.035, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.38);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  }
+
+  playArrowThud() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(135, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(42, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.14, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.13);
+  }
+
+  /** Cuernos y gritos distantes de victoria de Argos al cierre de Escena 2 */
+  playArgosVictoryCries() {
+    this.playWarHorn();
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    [0.3, 0.75, 1.2].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(190 + offset * 40, ctx.currentTime + offset);
+      osc.frequency.linearRampToValueAtTime(240, ctx.currentTime + offset + 0.35);
+      gain.gain.setValueAtTime(0.045, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.55);
+    });
+  }
+
   fadeAmbient(durationMs = 1200) {
     this.clearTimers();
     if (this.ambientGain && this.ctx) {

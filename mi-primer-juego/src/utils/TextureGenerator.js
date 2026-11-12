@@ -1,4 +1,4 @@
-import { WIDTH, GROUND_Y, COLORS, SPARTA_COLORS } from "../config/constants.js";
+import { WIDTH, GROUND_Y, COLORS, SPARTA_COLORS, GORGE_COLORS } from "../config/constants.js";
 
 /**
  * Generador procedural de texturas en memoria usando Phaser.GameObjects.Graphics.
@@ -20,6 +20,7 @@ export class TextureGenerator {
     this.generateSpartanEnvironment(scene);
     this.generateComicPortraits(scene);
     this.generateParticles(scene);
+    this.generateEscena2Textures(scene);
   }
 
   // --------------------------------------------------------------------------
@@ -501,6 +502,212 @@ export class TextureGenerator {
 
     this.createTexture(scene, "olive_leaf", 10, 6, (g) => {
       g.fillStyle(SPARTA_COLORS.oliveLeaf).fillEllipse(5, 3, 10, 5);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // TEXTURAS DE ESCENA 2: EL BARRO, LA LANZA Y LA CAÍDA (DESFILADERO Y ARGOS)
+  // --------------------------------------------------------------------------
+  static generateEscena2Textures(scene) {
+    // Estados de combate / herida del Soldado Espartano
+    this.createTexture(scene, "spartan_armed_guard", 68, 82, (g) => {
+      g.fillStyle(0x7a1212).fillTriangle(10, 26, 24, 26, 6, 58);
+      this.drawSpartanBody(g, 5, 4);
+      this.drawDory(g, 26, 60, 56, 22);
+      // Hoplón alzado firme al frente en Guardia Férrea
+      this.drawHoplon(g, 48, 42, 16);
+    });
+
+    this.createTexture(scene, "spartan_armed_thrust", 84, 82, (g) => {
+      g.fillStyle(0x7a1212).fillTriangle(8, 28, 22, 28, 4, 58);
+      this.drawSpartanBody(g, 4, 4);
+      // Lanza extendida en estocada frontal recta
+      this.drawDory(g, 24, 38, 72, 38);
+      this.drawHoplon(g, 30, 46, 14);
+    });
+
+    this.createTexture(scene, "spartan_kneeling_wounded", 64, 66, (g) => {
+      // Rodillas en el barro, sosteniéndose herida en la espalda
+      g.fillStyle(0x6e1919).fillRoundedRect(16, 24, 28, 24, 5);
+      g.fillStyle(0xc68e62).fillRect(14, 44, 14, 16).fillRect(34, 46, 16, 14);
+      g.fillStyle(0xd69d70).fillCircle(30, 15, 10);
+      g.fillStyle(0x2a1d17).fillEllipse(29, 9, 20, 9);
+      g.fillStyle(GORGE_COLORS.bloodRed).fillCircle(20, 34, 7);
+      // Lanza caída junto a él
+      this.drawDory(g, 8, 56, 56, 54);
+    });
+
+    this.createTexture(scene, "spartan_wounded_duck", 62, 56, (g) => {
+      // Agachado cubriéndose de flechas
+      g.fillStyle(0x6e1919).fillRoundedRect(14, 18, 28, 22, 6);
+      g.fillStyle(0xc68e62).fillRect(14, 36, 12, 16).fillRect(32, 36, 12, 16);
+      g.fillStyle(0xd69d70).fillCircle(32, 13, 10);
+      g.fillStyle(0x2a1d17).fillEllipse(31, 7, 20, 8);
+      g.fillStyle(GORGE_COLORS.bloodRed).fillCircle(22, 28, 5);
+      this.drawDory(g, 10, 44, 56, 26);
+    });
+
+    // Helper para dibujar soldados de Argos (túnica azul grisácea, casco/armadura de hierro)
+    const drawArgosBase = (g, ox, oy, withShield = false, isArcher = false, isLancer = false) => {
+      g.fillStyle(GORGE_COLORS.argosCape).fillTriangle(ox + 18, oy + 24, ox + 36, oy + 24, ox + 42, oy + 62);
+      g.fillStyle(0xb5855c).fillRect(ox + 16, oy + 50, 8, 22).fillRect(ox + 28, oy + 50, 8, 22);
+      g.fillStyle(0x475569).fillRect(ox + 16, oy + 58, 8, 12).fillRect(ox + 28, oy + 58, 8, 12);
+      g.fillStyle(GORGE_COLORS.argosBlue).fillRoundedRect(ox + 12, oy + 24, 28, 32, 5);
+      g.fillStyle(GORGE_COLORS.argosIron).fillRect(ox + 14, oy + 26, 24, 18);
+      // Casco de hierro argivo con cresta azul oscura
+      g.fillStyle(0x1e3a5f).fillEllipse(ox + 26, oy + 6, 18, 7);
+      g.fillStyle(GORGE_COLORS.argosIron).fillCircle(ox + 26, oy + 14, 10);
+      g.fillStyle(0x0f172a).fillRect(ox + 17, oy + 13, 6, 5);
+
+      if (isArcher) {
+        g.lineStyle(3, 0x5c3a21).strokeCircle(ox + 12, oy + 36, 14);
+        g.lineStyle(1, 0xe2e8f0).strokeLineShape(new Phaser.Geom.Line(ox + 14, oy + 22, ox + 14, oy + 50));
+      } else if (isLancer) {
+        g.lineStyle(3, 0x4b3428).strokeLineShape(new Phaser.Geom.Line(ox + 4, oy + 42, ox + 58, oy + 30));
+        g.fillStyle(0xcbd5e1).fillTriangle(ox + 4, oy + 38, ox - 8, oy + 43, ox + 4, oy + 46);
+      } else {
+        // Espada corta de hierro
+        g.fillStyle(0xcbd5e1).fillTriangle(ox + 2, oy + 38, ox + 16, oy + 34, ox + 16, oy + 42);
+      }
+
+      if (withShield) {
+        g.fillStyle(0x334155).fillCircle(ox + 16, oy + 42, 15);
+        g.lineStyle(2.5, 0x94a3b8).strokeCircle(ox + 16, oy + 42, 14);
+        g.lineStyle(2, 0x38bdf8).strokeLineShape(new Phaser.Geom.Line(ox + 11, oy + 36, ox + 21, oy + 48));
+      }
+    };
+
+    this.createTexture(scene, "argos_soldier", 58, 78, (g) => drawArgosBase(g, 4, 2));
+    this.createTexture(scene, "argos_shield_bearer", 62, 80, (g) => drawArgosBase(g, 6, 4, true, false, false));
+    this.createTexture(scene, "argos_lancer", 68, 80, (g) => drawArgosBase(g, 10, 4, false, false, true));
+    this.createTexture(scene, "argos_archer", 54, 76, (g) => drawArgosBase(g, 4, 2, false, true, false));
+
+    this.createTexture(scene, "argos_arrow", 36, 10, (g) => {
+      g.lineStyle(2.5, 0x7c5836).strokeLineShape(new Phaser.Geom.Line(6, 5, 32, 5));
+      g.fillStyle(0xcbd5e1).fillTriangle(0, 5, 9, 1, 9, 9);
+      g.fillStyle(0x38bdf8).fillRect(28, 2, 6, 6);
+    });
+
+    // Suelo de barro y utilería del desfiladero
+    this.createTexture(scene, "gorge_mud_ground", 512, 100, (g) => {
+      g.fillStyle(GORGE_COLORS.mudDark).fillRect(0, 12, 512, 88);
+      g.fillStyle(GORGE_COLORS.mudTop).fillRect(0, 4, 512, 12);
+      g.fillStyle(0x261c15);
+      for (let i = 0; i < 16; i++) {
+        g.fillEllipse((i * 41) % 490, 22 + (i % 4) * 14, 34, 10);
+      }
+    });
+
+    this.createTexture(scene, "broken_shield", 36, 20, (g) => {
+      g.fillStyle(SPARTA_COLORS.bronze).fillEllipse(18, 12, 32, 14);
+      g.fillStyle(SPARTA_COLORS.crimson).fillEllipse(18, 12, 24, 9);
+      g.lineStyle(3, 0x1a1412).strokeLineShape(new Phaser.Geom.Line(14, 4, 22, 18));
+    });
+
+    this.createTexture(scene, "stuck_spear", 24, 66, (g) => {
+      g.lineStyle(3.5, 0x5c3a21).strokeLineShape(new Phaser.Geom.Line(6, 6, 18, 64));
+      g.fillStyle(0x94a3b8).fillTriangle(4, 0, 11, 10, 2, 12);
+    });
+
+    this.createTexture(scene, "fallen_spartan_body", 76, 36, (g) => {
+      g.fillStyle(0x5c1111).fillRoundedRect(14, 12, 36, 18, 5);
+      g.fillStyle(0xc68e62).fillRect(46, 16, 20, 10);
+      g.fillStyle(SPARTA_COLORS.bronze).fillCircle(14, 18, 8);
+      g.fillStyle(GORGE_COLORS.bloodRed).fillEllipse(34, 28, 44, 9);
+    });
+
+    this.createTexture(scene, "fallen_argos_body", 76, 36, (g) => {
+      g.fillStyle(GORGE_COLORS.argosBlue).fillRoundedRect(14, 12, 36, 18, 5);
+      g.fillStyle(0xb5855c).fillRect(46, 16, 20, 10);
+      g.fillStyle(GORGE_COLORS.argosIron).fillCircle(14, 18, 8);
+      g.fillStyle(GORGE_COLORS.bloodRed).fillEllipse(32, 28, 38, 8);
+    });
+
+    // Partículas de lluvia, ceniza, barro, chispas y sangre
+    this.createTexture(scene, "rain_drop", 4, 20, (g) => {
+      g.lineStyle(1.8, GORGE_COLORS.rainBlue, 0.75).strokeLineShape(new Phaser.Geom.Line(3, 0, 1, 19));
+    });
+    this.createTexture(scene, "ash_mote", 8, 8, (g) => {
+      g.fillStyle(GORGE_COLORS.ashGrey, 0.7).fillCircle(4, 4, 3);
+    });
+    this.createTexture(scene, "mud_splash", 12, 12, (g) => {
+      g.fillStyle(0x5c4635, 0.85).fillCircle(6, 6, 5);
+    });
+    this.createTexture(scene, "blood_splat", 14, 14, (g) => {
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.9).fillCircle(7, 7, 6);
+    });
+    this.createTexture(scene, "spark_clank", 14, 14, (g) => {
+      g.fillStyle(0xffe082, 0.95).fillCircle(7, 7, 4);
+      g.lineStyle(2, 0xffffff).strokeLineShape(new Phaser.Geom.Line(1, 7, 13, 7));
+      g.lineStyle(2, 0xffffff).strokeLineShape(new Phaser.Geom.Line(7, 1, 7, 13));
+    });
+
+    // Cinemática Hito 2.2: Plano Primera Persona 3D al ras del suelo
+    const drawFPGeneralBase = (g, { impaled = false, kneeling = false } = {}) => {
+      const yShift = kneeling ? 38 : 0;
+      // Capa carmesí desgarrada
+      g.fillStyle(0x7f1313).fillTriangle(95, 58 + yShift, 18, 228, 172, 228);
+      // Cuerpo / coraza ornamentada de bronce manchada
+      g.fillStyle(SPARTA_COLORS.bronze).fillRoundedRect(54, 58 + yShift, 82, 102, 16);
+      g.lineStyle(3, SPARTA_COLORS.bronzeLight).strokeRect(64, 72 + yShift, 62, 54);
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.7).fillCircle(78, 96 + yShift, 12);
+      // Casco corintio y gran penacho
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(95, 16 + yShift, 58, 22);
+      g.fillStyle(SPARTA_COLORS.bronzeLight).fillCircle(95, 38 + yShift, 22);
+      g.fillStyle(0x140f0d).fillRect(80, 33 + yShift, 30, 12);
+      g.fillStyle(0xffffff).fillCircle(88, 39 + yShift, 2.5).fillCircle(102, 39 + yShift, 2.5);
+      // Piernas o rodillas
+      if (!kneeling) {
+        g.fillStyle(0xb58057).fillRect(62, 160, 22, 92).fillRect(106, 160, 22, 92);
+        g.fillStyle(SPARTA_COLORS.bronze).fillRect(62, 198, 22, 42).fillRect(106, 198, 22, 42);
+      } else {
+        g.fillStyle(0xb58057).fillRect(58, 162 + yShift - 18, 74, 34);
+      }
+      // Mano ensangrentada extendida hacia el jugador (cámara)
+      if (!impaled) {
+        g.fillStyle(0xc68e62).fillRoundedRect(118, 94 + yShift, 52, 24, 8);
+        g.fillStyle(GORGE_COLORS.bloodRed).fillCircle(154, 106 + yShift, 11);
+      } else {
+        // Punta de lanza argiva atravesando brutalmente el pecho desde atrás
+        g.lineStyle(7, 0x3f2c1e).strokeLineShape(new Phaser.Geom.Line(95, 92 + yShift, 152, 72 + yShift));
+        g.fillStyle(0xe2e8f0).fillTriangle(86, 86 + yShift, 102, 122 + yShift, 118, 92 + yShift);
+        g.fillStyle(GORGE_COLORS.bloodRed).fillCircle(98, 98 + yShift, 18);
+      }
+    };
+
+    this.createTexture(scene, "fp_general_approach", 190, 270, (g) => drawFPGeneralBase(g));
+    this.createTexture(scene, "fp_general_impaled", 190, 270, (g) => drawFPGeneralBase(g, { impaled: true }));
+    this.createTexture(scene, "fp_general_kneeling", 190, 220, (g) => drawFPGeneralBase(g, { impaled: true, kneeling: true }));
+
+    this.createTexture(scene, "fp_general_dead", 220, 120, (g) => {
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.88).fillEllipse(110, 88, 175, 42);
+      g.fillStyle(0x7a1212).fillRoundedRect(26, 48, 148, 46, 14);
+      g.fillStyle(SPARTA_COLORS.bronze).fillRoundedRect(54, 38, 86, 44, 12);
+      g.fillStyle(SPARTA_COLORS.bronzeLight).fillCircle(156, 58, 22);
+      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(164, 38, 36, 14);
+    });
+
+    this.createTexture(scene, "fp_player_hand", 110, 130, (g) => {
+      g.fillStyle(0xb58057).fillRoundedRect(20, 44, 48, 86, 14);
+      g.fillStyle(0x5c3a21).fillRect(20, 76, 48, 24);
+      g.fillStyle(0xc68e62).fillCircle(44, 36, 22);
+      g.fillStyle(0xc68e62).fillRect(24, 8, 8, 28).fillRect(36, 4, 8, 30).fillRect(48, 8, 8, 28);
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.65).fillCircle(40, 56, 14);
+    });
+
+    // Retrato del Soldado en estado de shock (Hito 2.2)
+    this.createTexture(scene, "portrait_soldier_shock", 72, 72, (g) => {
+      g.fillStyle(0x2d1a1a).fillRect(0, 0, 72, 72);
+      g.fillStyle(0x6e1919).fillCircle(36, 74, 28);
+      g.fillStyle(0xc6936c).fillCircle(36, 33, 17);
+      g.fillStyle(0x2a1d17).fillEllipse(36, 19, 34, 13);
+      g.fillStyle(0x2a1d17).fillRoundedRect(24, 39, 24, 12, 4);
+      // Ojos muy abiertos en shock
+      g.fillStyle(0xffffff).fillCircle(30, 30, 4.5).fillCircle(42, 30, 4.5);
+      g.fillStyle(0x111111).fillCircle(30, 30, 1.8).fillCircle(42, 30, 1.8);
+      // Salpicaduras de barro y sangre
+      g.fillStyle(GORGE_COLORS.bloodRed, 0.75).fillCircle(44, 40, 3.5);
+      g.fillStyle(0x4d3c2f, 0.7).fillCircle(24, 35, 3);
     });
   }
 }

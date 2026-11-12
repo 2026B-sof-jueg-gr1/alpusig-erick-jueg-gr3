@@ -655,85 +655,15 @@ export class Escena1Scene extends Phaser.Scene {
         });
       });
 
-      // Fundido a negro
+      // Fundido a negro y transición directa a Escena 2
       this.time.delayedCall(750, () => {
         this.cameras.main.fadeOut(2000, 0, 0, 0);
         this.time.delayedCall(2100, () => {
-          this.showEndOfScene1Overlay();
+          this.milestoneState.sceneCompleted = true;
+          this.audio.stopAmbient();
+          this.scene.start("Escena2Scene", { startAt: "2.1" });
         });
       });
-    });
-  }
-
-  /**
-   * Pantalla de cierre de Escena 1 mientras se implementa la Escena 2.
-   */
-  showEndOfScene1Overlay() {
-    this.milestoneState.sceneCompleted = true;
-    this.audio.stopAmbient();
-
-    const overlay = this.add.container(WIDTH / 2, HEIGHT / 2)
-      .setScrollFactor(0)
-      .setDepth(200)
-      .setAlpha(0);
-
-    const panel = this.add.graphics();
-    panel.fillStyle(0x0b0908, 0.96).fillRect(-WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
-    panel.lineStyle(2, SPARTA_COLORS.bronzeLight, 0.85).strokeRect(-330, -140, 660, 280);
-
-    const header = this.add.text(0, -86, "FIN DE LA ESCENA 1", {
-      fontFamily: "Georgia, serif",
-      fontSize: "16px",
-      color: "#e8b962",
-      letterSpacing: 4
-    }).setOrigin(0.5);
-
-    const title = this.add.text(0, -40, "El Escudo del Pueblo y el Llamado de la Sangre", {
-      fontFamily: "Georgia, serif",
-      fontSize: "24px",
-      fontStyle: "bold",
-      color: "#fff6e5"
-    }).setOrigin(0.5);
-
-    const nextHint = this.add.text(
-      0,
-      10,
-      "Próxima parada: ESCENA 2 — El Barro, la Lanza y la Caída",
-      {
-        fontFamily: "Georgia, serif",
-        fontSize: "16px",
-        fontStyle: "italic",
-        color: "#cbd5e1"
-      }
-    ).setOrigin(0.5);
-
-    const replayBtn = this.add.text(-120, 82, "REPETIR ESCENA 1", {
-      fontFamily: "Georgia, serif",
-      fontSize: "16px",
-      color: "#1a1412",
-      backgroundColor: "#e8b962",
-      padding: { left: 16, right: 16, top: 10, bottom: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    replayBtn.on("pointerdown", () => this.scene.restart());
-
-    const menuBtn = this.add.text(125, 82, "MENÚ PRINCIPAL", {
-      fontFamily: "Georgia, serif",
-      fontSize: "16px",
-      color: "#fff6e5",
-      backgroundColor: "#7a1212",
-      padding: { left: 16, right: 16, top: 10, bottom: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    menuBtn.on("pointerdown", () => this.scene.start("MenuScene"));
-
-    overlay.add([panel, header, title, nextHint, replayBtn, menuBtn]);
-
-    this.cameras.main.resetFX();
-    this.tweens.add({
-      targets: overlay,
-      alpha: 1,
-      duration: 700
     });
   }
 }

@@ -31,7 +31,7 @@ export class EnemyManager {
   }
 
   update(time, player) {
-    this.enemies.children.each((enemy) => {
+    this.enemies.getChildren().forEach((enemy) => {
       this.updateSingleEnemy(enemy, time, player);
     });
   }

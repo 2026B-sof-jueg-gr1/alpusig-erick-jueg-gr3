@@ -10,7 +10,7 @@ export const SPARTAN_STATES = {
 
 /**
  * Controlador del Soldado Espartano común (Protagonista de The Last Spartan).
- * Soporta los 4 estados de movimiento y el equipamiento exclusivo de
+ * Soporta los 4 estados de movimiento y el sistema exclusivo de combate con
  * Lanza Espartana (Dory) y Escudo Espartano (Hoplón).
  */
 export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
@@ -29,22 +29,42 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     this.hasShield = false;
     this.facing = 1;
 
-    // Variables de animación y combate (Dory + Hoplón)
+    // Salud y estado de combate
+    this.maxHealth = 100;
+    this.health = 100;
+    this.invulnerableUntil = 0;
+
+    // Variables de animación, Dory y Hoplón
     this.walkPhase = 0;
     this.baseY = y;
     this.postureUntil = 0;
     this.isGuarding = false;
     this.isDucked = false;
+    this.isChargingHeavy = false;
+    this.isDashing = false;
+    this.dashUntil = 0;
+    this.dodgeCooldownUntil = 0;
     this.comboStep = 0;
     this.comboResetAt = 0;
     this.attackCooldownUntil = 0;
+    this.poseUntil = 0;
+    this.currentPoseTexture = null;
 
-    this.applyStateVisuals();
+    this.setGameplayState(initialState);
   }
 
   setGameplayState(state) {
     this.gameplayState = state;
-    if (state === SPARTAN_STATES.WOUNDED_FLEE || state === SPARTAN_STATES.DESPERATE_SPRINT) {
+    this.isChargingHeavy = false;
+    this.isDashing = false;
+    this.isDucked = false;
+    this.currentPoseTexture = null;
+
+    if (state === SPARTAN_STATES.PEACEFUL_GUARD) {
+      this.hasShield = false;
+      this.hasSpear = false;
+      this.isGuarding = false;
+    } else if (state === SPARTAN_STATES.WOUNDED_FLEE || state === SPARTAN_STATES.DESPERATE_SPRINT) {
       this.hasShield = false;
       this.hasSpear = true;
       this.isGuarding = false;
@@ -75,13 +95,24 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
       this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE ||
       this.gameplayState === SPARTAN_STATES.DESPERATE_SPRINT
     ) {
-      this.setTexture("spartan_wounded");
-      this.body.setSize(34, 70).setOffset(12, 4);
+      if (this.isDucked) {
+        this.setTexture("spartan_wounded_duck");
+        this.body.setSize(34, 48).setOffset(12, 6);
+      } else {
+        this.setTexture("spartan_wounded");
+        this.body.setSize(34, 70).setOffset(12, 4);
+      }
       return;
     }
 
     if (this.hasSpear && this.hasShield) {
-      this.setTexture("spartan_armed");
+      if (this.currentPoseTexture) {
+        this.setTexture(this.currentPoseTexture);
+      } else if (this.isGuarding) {
+        this.setTexture("spartan_armed_guard");
+      } else {
+        this.setTexture("spartan_armed");
+      }
       this.body.setSize(34, 74).setOffset(16, 6);
     } else {
       this.setTexture("spartan_unarmed");
@@ -94,6 +125,12 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     if (!enabled) {
       this.setVelocityX(0);
       this.setAngle(0);
+      this.isGuarding = false;
+      this.isChargingHeavy = false;
+      this.isDashing = false;
+      this.isDucked = false;
+      this.currentPoseTexture = null;
+      this.applyStateVisuals();
     }
   }
 
@@ -164,6 +201,167 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  // ==========================================================================
+  // MECÁNICAS DE COMBATE: DORY Y HOPLÓN (ESTADO 2)
+  // ==========================================================================
+
+  performQuickThrust(time) {
+    if (time < this.attackCooldownUntil || this.isChargingHeavy) return;
+
+    this.comboStep = time <= this.comboResetAt ? (this.comboStep % 3) + 1 : 1;
+    this.comboResetAt = time + 720;
+    this.attackCooldownUntil = time + (this.comboStep === 3 ? 380 : 250);
+
+    this.showPose("spartan_armed_thrust", 170);
+    this.setVelocityX(this.facing * (this.comboStep === 3 ? 170 : 95));
+    this.dashUntil = time + 110;
+    this.isDashing = true;
+
+    const damage = this.comboStep === 3 ? 32 : 20;
+    const range = this.comboStep === 3 ? 105 : 90;
+    const knockback = this.comboStep === 3 ? 165 : 70;
+
+    this.scene.events.emit("spartan-attack", {
+      type: "quick_thrust",
+      comboStep: this.comboStep,
+      damage,
+      range,
+      knockback,
+      breaksGuard: false,
+      stunMs: 0
+    });
+  }
+
+  performHeavySweep(time) {
+    if (time < this.attackCooldownUntil || this.isChargingHeavy) return;
+
+    this.isChargingHeavy = true;
+    this.attackCooldownUntil = time + 680;
+    this.setVelocityX(0);
+    this.setTint(0xfde68a);
+
+    // Breve tiempo de carga visual antes del barrido / estocada pesada
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.94,
+      scaleY: 1.04,
+      duration: 210,
+      ease: "Quad.easeIn",
+      onComplete: () => {
+        if (!this.active || !this.controlEnabled) {
+          this.clearTint();
+          this.isChargingHeavy = false;
+          return;
+        }
+        this.clearTint();
+        this.setScale(1);
+        this.isChargingHeavy = false;
+
+        this.showPose("spartan_armed_thrust", 240);
+        this.setVelocityX(this.facing * 240);
+        this.dashUntil = this.scene.time.now + 150;
+        this.isDashing = true;
+
+        this.scene.events.emit("spartan-attack", {
+          type: "heavy_sweep",
+          comboStep: 0,
+          damage: 42,
+          range: 124,
+          knockback: 250,
+          breaksGuard: true,
+          stunMs: 450
+        });
+      }
+    });
+  }
+
+  performShieldBash(time) {
+    if (time < this.attackCooldownUntil || this.isChargingHeavy || !this.hasShield) return;
+
+    this.attackCooldownUntil = time + 520;
+    this.showPose("spartan_armed_guard", 230);
+    this.setVelocityX(this.facing * 330);
+    this.dashUntil = time + 175;
+    this.isDashing = true;
+
+    this.scene.events.emit("spartan-attack", {
+      type: "shield_bash",
+      comboStep: 0,
+      damage: 14,
+      range: 80,
+      knockback: 185,
+      breaksGuard: true,
+      stunMs: 1250
+    });
+  }
+
+  showPose(textureKey, durationMs) {
+    this.currentPoseTexture = textureKey;
+    this.poseUntil = this.scene.time.now + durationMs;
+    this.applyStateVisuals();
+  }
+
+  // ==========================================================================
+  // MANIOBRA DE ESQUIVE EN ESTADO 3 (HERIDO)
+  // ==========================================================================
+
+  performWoundedDodge(time, dir) {
+    if (time < this.dodgeCooldownUntil || this.isDashing) return;
+    this.dodgeCooldownUntil = time + 950;
+    const dodgeDir = dir !== 0 ? dir : -1;
+    this.faceDirection(dodgeDir);
+    this.setVelocityX(dodgeDir * 245);
+    this.dashUntil = time + 210;
+    this.isDashing = true;
+
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.72,
+      duration: 105,
+      yoyo: true
+    });
+  }
+
+  // ==========================================================================
+  // DAÑO Y BLOQUEO DIRECCIONAL CON HOPLÓN
+  // ==========================================================================
+
+  isFrontalSource(attackerX) {
+    if (attackerX === undefined || attackerX === null) return false;
+    const dx = attackerX - this.x;
+    return this.facing > 0 ? dx >= -10 : dx <= 10;
+  }
+
+  takeDamage(amount, attackerX, time, { ignoreGuard = false } = {}) {
+    if (this.health <= 0) return { tookDamage: false, blocked: false };
+
+    // Guardia Férrea: bloquea el 100% del daño frontal
+    if (
+      this.gameplayState === SPARTAN_STATES.ACTIVE_COMBAT &&
+      this.hasShield &&
+      this.isGuarding &&
+      !ignoreGuard &&
+      this.isFrontalSource(attackerX)
+    ) {
+      this.scene.cameras.main.shake(70, 0.0025);
+      return { tookDamage: false, blocked: true };
+    }
+
+    if (time < this.invulnerableUntil) {
+      return { tookDamage: false, blocked: false };
+    }
+
+    this.health = Math.max(0, this.health - amount);
+    this.invulnerableUntil = time + 700;
+    this.setTint(0xff4d4d);
+    this.scene.cameras.main.shake(140, 0.007);
+    this.scene.time.delayedCall(170, () => {
+      if (this.active && !this.isChargingHeavy) this.clearTint();
+    });
+
+    return { tookDamage: true, blocked: false };
+  }
+
   getMovementSpeed() {
     switch (this.gameplayState) {
       case SPARTAN_STATES.PEACEFUL_GUARD:
@@ -171,7 +369,7 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
       case SPARTAN_STATES.ACTIVE_COMBAT:
         return this.isGuarding ? 115 : 225;
       case SPARTAN_STATES.WOUNDED_FLEE:
-        return this.isDucked ? 50 : 110;
+        return this.isDucked ? 42 : 108;
       case SPARTAN_STATES.DESPERATE_SPRINT:
         return 265;
       default:
@@ -182,18 +380,54 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
   update(time, delta, cursors, keys) {
     if (!this.controlEnabled) return;
 
+    if (this.currentPoseTexture && time >= this.poseUntil) {
+      this.currentPoseTexture = null;
+      this.applyStateVisuals();
+    }
+
+    if (this.isDashing) {
+      if (time >= this.dashUntil) {
+        this.isDashing = false;
+      } else {
+        return;
+      }
+    }
+
+    if (this.isChargingHeavy) {
+      this.setVelocityX(0);
+      return;
+    }
+
     const left = cursors.left.isDown || keys.A?.isDown;
     const right = cursors.right.isDown || keys.D?.isDown;
     const down = cursors.down.isDown || keys.S?.isDown;
+    const moveDir = (right ? 1 : 0) - (left ? 1 : 0);
 
-    // Estado 3: opción de agacharse ante flechas
-    this.isDucked = this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE && down;
+    // Estado 3: Agacharse ante flechas o esquivar con Espacio
+    if (this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE) {
+      const nextDuck = Boolean(down);
+      if (nextDuck !== this.isDucked) {
+        this.isDucked = nextDuck;
+        this.applyStateVisuals();
+      }
+      if (cursors.space && Phaser.Input.Keyboard.JustDown(cursors.space)) {
+        this.performWoundedDodge(time, moveDir);
+        return;
+      }
+    } else {
+      this.isDucked = false;
+    }
 
-    // Estado 2: Guardia Férrea con escudo
-    this.isGuarding =
+    // Estado 2: Guardia Férrea con escudo (L o Shift)
+    const wantsGuard =
       this.gameplayState === SPARTAN_STATES.ACTIVE_COMBAT &&
       this.hasShield &&
       Boolean(keys.L?.isDown || keys.SHIFT?.isDown);
+
+    if (wantsGuard !== this.isGuarding) {
+      this.isGuarding = wantsGuard;
+      this.applyStateVisuals();
+    }
 
     const speed = this.getMovementSpeed();
 
@@ -210,20 +444,33 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
       this.setAngle(0);
     }
 
-    // Estado 1: postura marcial visual sin daño con J si ya está armado
+    // Estado 1: postura marcial visual sin daño
     if (
       this.gameplayState === SPARTAN_STATES.PEACEFUL_GUARD &&
       keys.J &&
       Phaser.Input.Keyboard.JustDown(keys.J)
     ) {
       this.triggerMartialPosture(time);
+      return;
+    }
+
+    // Estado 2: Acciones de Combate (Dory + Hoplón)
+    if (this.gameplayState === SPARTAN_STATES.ACTIVE_COMBAT) {
+      if (keys.J && Phaser.Input.Keyboard.JustDown(keys.J)) {
+        if (this.isGuarding) {
+          this.performShieldBash(time);
+        } else {
+          this.performQuickThrust(time);
+        }
+      } else if (keys.K && Phaser.Input.Keyboard.JustDown(keys.K)) {
+        this.performHeavySweep(time);
+      }
     }
   }
 
   applyWalkCadence(delta, speed) {
     this.walkPhase += (delta / 1000) * (speed / 24);
-    const tiltAmplitude = this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE ? 4.5 : 1.8;
+    const tiltAmplitude = this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE ? 5.2 : 1.8;
     this.setAngle(Math.sin(this.walkPhase) * tiltAmplitude);
   }
 }
-

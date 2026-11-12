@@ -35,3 +35,19 @@ export const SPARTA_COLORS = {
   bubbleFill: 0xfffdf6
 };
 
+export const GORGE_COLORS = {
+  skyTop: 0x1c222b,
+  skyHorizon: 0x3b424c,
+  cliffFar: 0x242a33,
+  cliffMid: 0x2e353f,
+  mudDark: 0x362a21,
+  mudTop: 0x4d3c2f,
+  rainBlue: 0x9fb8cc,
+  ashGrey: 0x9ca3af,
+  argosIron: 0x7b8b9e,
+  argosBlue: 0x264b73,
+  argosCape: 0x1c3554,
+  bloodRed: 0x8b0f14,
+  dangerRed: 0xd92626
+};
+

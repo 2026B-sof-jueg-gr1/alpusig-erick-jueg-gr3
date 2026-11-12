@@ -7,10 +7,18 @@
  * 3. ¡Listo! Phaser usará tu imagen automáticamente manteniendo todas las físicas y mecánicas intactas.
  */
 export const CUSTOM_TEXTURES = [
-  // Personajes Parte 1: El Precio de la Gloria (Esparta)
+  // Personajes Parte 1: El Precio de la Gloria (Esparta y Argos)
   // { key: "spartan_unarmed", path: "assets/sprites/spartan_unarmed.png" },
   // { key: "spartan_armed", path: "assets/sprites/spartan_armed.png" },
+  // { key: "spartan_armed_guard", path: "assets/sprites/spartan_armed_guard.png" },
+  // { key: "spartan_armed_thrust", path: "assets/sprites/spartan_armed_thrust.png" },
   // { key: "spartan_wounded", path: "assets/sprites/spartan_wounded.png" },
+  // { key: "spartan_wounded_duck", path: "assets/sprites/spartan_wounded_duck.png" },
+  // { key: "argos_soldier", path: "assets/sprites/argos_soldier.png" },
+  // { key: "argos_shield_bearer", path: "assets/sprites/argos_shield_bearer.png" },
+  // { key: "argos_lancer", path: "assets/sprites/argos_lancer.png" },
+  // { key: "argos_archer", path: "assets/sprites/argos_archer.png" },
+  // { key: "argos_arrow", path: "assets/sprites/argos_arrow.png" },
   // { key: "spartan_wife", path: "assets/sprites/spartan_wife.png" },
   // { key: "spartan_child_boy", path: "assets/sprites/spartan_child_boy.png" },
   // { key: "spartan_child_girl", path: "assets/sprites/spartan_child_girl.png" },

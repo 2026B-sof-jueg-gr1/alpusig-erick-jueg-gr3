@@ -26,7 +26,14 @@ Al agregar el archivo y declararlo en `src/config/assetsConfig.js`, Phaser carga
 | :--- | :--- | :--- | :--- |
 | `spartan_unarmed.png` | `spartan_unarmed` | 54 x 78 px | Soldado espartano desarmado (hogar) |
 | `spartan_armed.png` | `spartan_armed` | 68 x 82 px | Soldado espartano con Lanza (Dory) y Escudo (Hoplón) |
+| `spartan_armed_guard.png` | `spartan_armed_guard` | 68 x 82 px | Soldado en Guardia Férrea |
+| `spartan_armed_thrust.png` | `spartan_armed_thrust` | 84 x 82 px | Soldado ejecutando estocada de lanza |
 | `spartan_wounded.png` | `spartan_wounded` | 60 x 76 px | Soldado espartano herido (Estado 3) |
+| `spartan_wounded_duck.png` | `spartan_wounded_duck` | 62 x 56 px | Soldado herido agachado esquivando flechas |
+| `argos_soldier.png` | `argos_soldier` | 58 x 78 px | Infante enemigo de Argos |
+| `argos_shield_bearer.png` | `argos_shield_bearer` | 62 x 80 px | Escudero de Argos |
+| `argos_lancer.png` | `argos_lancer` | 68 x 80 px | Lancero de Argos |
+| `argos_archer.png` | `argos_archer` | 54 x 76 px | Arquero de Argos |
 | `spartan_wife.png` | `spartan_wife` | 48 x 74 px | Esposa del soldado |
 | `spartan_child_boy.png` | `spartan_child_boy` | 30 x 48 px | Hijo del soldado |
 | `spartan_child_girl.png` | `spartan_child_girl` | 30 x 46 px | Hija del soldado |
