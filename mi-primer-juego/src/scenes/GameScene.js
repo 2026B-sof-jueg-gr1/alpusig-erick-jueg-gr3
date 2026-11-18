@@ -163,7 +163,18 @@ export class GameScene extends Phaser.Scene {
   performMeleeAttack({ damage, heavy, comboStep }) {
     this.attackGraphic.setVisible(true);
     this.attackGraphic.setTexture("axe").setScale(heavy ? 1.3 : 1);
+    this.attackGraphic.setAngle(this.player.facing * (heavy ? 32 : 18));
     this.audio.playAttack();
+
+    this.tweens.add({
+      targets: this.player,
+      x: this.player.x + this.player.facing * (heavy ? 18 : 10),
+      scaleX: heavy ? 1.08 : 1.04,
+      duration: 70,
+      yoyo: true,
+      ease: "Quad.easeOut",
+      onComplete: () => this.player.setScale(1)
+    });
 
     const hitbox = new Phaser.Geom.Rectangle(
       this.player.x + this.player.facing * 5 - (this.player.facing < 0 ? 100 : 0),

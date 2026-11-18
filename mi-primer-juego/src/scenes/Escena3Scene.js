@@ -30,6 +30,7 @@ export class Escena3Scene extends Phaser.Scene {
     this.phaseState = {
       currentMilestone: "3.1",
       watchpostTriggered: false,
+      discoveryActive: false,
       sprintActive: false,
       inCinematic: false,
       sceneCompleted: false
@@ -240,7 +241,12 @@ export class Escena3Scene extends Phaser.Scene {
     });
 
     this.input.keyboard.on("keydown-P", () => {
-      if (this.scene.isPaused() || this.phaseState.inCinematic || this.phaseState.sceneCompleted) {
+      if (
+        this.scene.isPaused() ||
+        this.phaseState.discoveryActive ||
+        this.phaseState.inCinematic ||
+        this.phaseState.sceneCompleted
+      ) {
         return;
       }
       this.scene.pause();
@@ -319,12 +325,26 @@ export class Escena3Scene extends Phaser.Scene {
   update(time, delta) {
     this.narrative.update();
 
-    if (this.phaseState.inCinematic || this.phaseState.sceneCompleted) return;
+    if (this.phaseState.discoveryActive || this.phaseState.inCinematic || this.phaseState.sceneCompleted) return;
 
     this.player.update(time, delta, this.cursors, this.keys);
 
     const px = this.player.x;
     const { watchpostTriggerX, doorPromptX, doorThresholdX } = VILLAGE_LAYOUT.escena3;
+
+    // Hito 3.1: el camino solo avanza hacia el oeste. No permite retroceder hacia la salida.
+    if (this.phaseState.currentMilestone === "3.1" && this.player.body.velocity.x > 0) {
+      this.player.setVelocityX(0);
+      this.player.faceDirection(-1);
+    }
+
+    // Hito 3.2: la huida es forzada hacia el hogar. Las flechas de dirección ya no cambian el destino.
+    if (this.phaseState.sprintActive) {
+      const sprintSpeed = this.player.getMovementSpeed();
+      this.player.setVelocityX(-sprintSpeed);
+      this.player.faceDirection(-1);
+      this.player.applyWalkCadence(delta, sprintSpeed);
+    }
 
     // Hito 3.1: Descubrimiento de los ancianos muertos en el pórtico de vigilancia
     if (!this.phaseState.watchpostTriggered && px <= watchpostTriggerX) {
@@ -342,6 +362,9 @@ export class Escena3Scene extends Phaser.Scene {
   }
 
   async triggerWatchpostDiscovery() {
+    this.phaseState.discoveryActive = true;
+    this.player.setControlEnabled(false);
+    this.cameras.main.shake(220, 0.008);
     this.objectiveText.setText("¡Descubre qué ocurrió en el pueblo!").setColor("#fca5a5");
 
     await this.narrative.showVignette({
@@ -354,8 +377,13 @@ export class Escena3Scene extends Phaser.Scene {
       autoDismissDelay: 4200
     });
 
-    if (!this.sys.isActive() || this.phaseState.inCinematic) return;
+    if (!this.sys.isActive() || this.phaseState.inCinematic) {
+      this.phaseState.discoveryActive = false;
+      return;
+    }
 
+    this.phaseState.discoveryActive = false;
+    this.player.setControlEnabled(true);
     this.activateHito3_2DesperateSprint();
   }
 

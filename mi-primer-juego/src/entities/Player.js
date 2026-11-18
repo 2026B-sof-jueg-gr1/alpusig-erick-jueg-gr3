@@ -21,6 +21,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.attackCooldownUntil = 0;
     this.facing = 1;
     this.jumpHeld = false;
+    this.walkPhase = 0;
+    this.wasGrounded = true;
   }
 
   handleMovement(cursors, keys) {
@@ -28,23 +30,56 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const left = cursors.left.isDown || keys.A.isDown;
     const right = cursors.right.isDown || keys.D.isDown;
+    const moving = left || right;
+    const grounded = this.body.blocked.down;
+
+    if (grounded && !this.wasGrounded) {
+      this.scene.tweens.add({
+        targets: this,
+        scaleX: 1.08,
+        scaleY: 0.92,
+        duration: 90,
+        yoyo: true,
+        ease: "Quad.easeOut"
+      });
+    }
+    this.wasGrounded = grounded;
 
     if (left) {
       this.setVelocityX(-220);
       this.setFlipX(true);
       this.facing = -1;
+      this.walkPhase += 0.16;
     } else if (right) {
       this.setVelocityX(220);
       this.setFlipX(false);
       this.facing = 1;
+      this.walkPhase += 0.16;
     } else {
       this.setVelocityX(0);
+      this.walkPhase += 0.04;
+    }
+
+    if (moving && this.body.blocked.down) {
+      this.setAngle(Math.sin(this.walkPhase) * 2.2);
+      this.setScaleY(1 + Math.abs(Math.sin(this.walkPhase)) * 0.018);
+    } else if (this.body.blocked.down) {
+      this.setAngle(0);
+      this.setScaleY(1);
     }
 
     const wantsJump = cursors.up.isDown || keys.W.isDown || cursors.space?.isDown;
     if (wantsJump && this.body.blocked.down && !this.jumpHeld) {
       this.setVelocityY(-420);
       this.jumpHeld = true;
+      this.scene.tweens.add({
+        targets: this,
+        scaleX: 0.92,
+        scaleY: 1.08,
+        duration: 120,
+        yoyo: true,
+        ease: "Quad.easeOut"
+      });
     }
     if (!wantsJump) {
       this.jumpHeld = false;

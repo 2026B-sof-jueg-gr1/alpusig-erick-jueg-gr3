@@ -221,6 +221,7 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     this.setVelocityX(this.facing * (this.comboStep === 3 ? 170 : 95));
     this.dashUntil = time + 110;
     this.isDashing = true;
+    this.animateAttackStrike(this.comboStep === 3 ? 12 : 8);
 
     const damage = this.comboStep === 3 ? 32 : 20;
     const range = this.comboStep === 3 ? 105 : 90;
@@ -266,6 +267,7 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
         this.setVelocityX(this.facing * 240);
         this.dashUntil = this.scene.time.now + 150;
         this.isDashing = true;
+        this.animateAttackStrike(18);
 
         this.scene.events.emit("spartan-attack", {
           type: "heavy_sweep",
@@ -288,6 +290,7 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     this.setVelocityX(this.facing * 330);
     this.dashUntil = time + 175;
     this.isDashing = true;
+    this.animateAttackStrike(14);
 
     this.scene.events.emit("spartan-attack", {
       type: "shield_bash",
@@ -297,6 +300,25 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
       knockback: 185,
       breaksGuard: true,
       stunMs: 1250
+    });
+  }
+
+  animateAttackStrike(lungePixels) {
+    if (!this.active) return;
+
+    this.scene.tweens.add({
+      targets: this,
+      x: this.x + this.facing * lungePixels,
+      scaleX: 1.06,
+      scaleY: 1.04,
+      angle: this.facing * -2.5,
+      duration: 85,
+      yoyo: true,
+      ease: "Quad.easeOut",
+      onComplete: () => {
+        this.setScale(1, 1);
+        this.setAngle(0);
+      }
     });
   }
 

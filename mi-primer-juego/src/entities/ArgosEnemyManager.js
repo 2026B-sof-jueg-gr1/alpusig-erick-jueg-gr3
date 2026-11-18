@@ -169,6 +169,20 @@ export class ArgosEnemyManager {
     enemy.isWindingUp = true;
     enemy.windupUntil = time + windupMs;
     enemy.setTint(0xfca5a5);
+    this.scene.tweens.add({
+      targets: enemy,
+      scaleX: 1.08,
+      scaleY: 0.94,
+      angle: enemy.flipX ? 3 : -3,
+      duration: windupMs * 0.55,
+      yoyo: true,
+      ease: "Quad.easeIn",
+      onComplete: () => {
+        if (enemy.active) {
+          enemy.setScale(1).setAngle(0);
+        }
+      }
+    });
   }
 
   executeEnemyAttack(enemy, player, time, cdMult) {
@@ -246,6 +260,13 @@ export class ArgosEnemyManager {
         this.audio?.playShieldBlock();
         this.spawnParticles(enemy.x, enemy.y - 8, "spark_clank", 6);
         enemy.setVelocityX(player.facing * 65);
+        this.scene.cameras.main.shake(55, 0.002);
+        this.scene.tweens.add({
+          targets: enemy,
+          angle: player.facing * 8,
+          duration: 90,
+          yoyo: true
+        });
         enemy.hurtUntil = time + 120;
         this.hud?.showFloatingText(enemy.x, enemy.y - 52, "ESCUDO [Shift+J / K]", "#93c5fd");
         return;
@@ -286,13 +307,23 @@ export class ArgosEnemyManager {
   defeatEnemy(enemy) {
     const ex = enemy.x;
     const ey = GROUND_Y - 14;
+    const fellSide = enemy.body?.velocity.x >= 0 ? 1 : -1;
     enemy.destroy();
 
     this.audio?.playEnemyDeath();
     this.spawnParticles(ex, ey, "mud_splash", 6);
-    this.scene.add.image(ex, ey, "fallen_argos_body")
+    const fallenBody = this.scene.add.image(ex, ey, "fallen_argos_body")
       .setFlipX(Math.random() < 0.5)
+      .setAngle(fellSide * 4)
       .setDepth(13);
+    this.scene.tweens.add({
+      targets: fallenBody,
+      x: ex + fellSide * 34,
+      y: ey + 8,
+      angle: fellSide * 78,
+      duration: 260,
+      ease: "Cubic.easeOut"
+    });
 
     this.kills += 1;
     if (this.onKillCallback) {

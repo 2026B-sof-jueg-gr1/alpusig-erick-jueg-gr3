@@ -279,7 +279,12 @@ export class Escena1Scene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys("A,D,W,S,E,J,P");
 
     this.input.keyboard.on("keydown-P", () => {
-      if (this.scene.isPaused() || this.milestoneState.sceneCompleted) return;
+      if (
+        this.scene.isPaused() ||
+        this.milestoneState.hito1_2Started ||
+        this.milestoneState.hito1_3Started ||
+        this.milestoneState.sceneCompleted
+      ) return;
       this.scene.pause();
       this.scene.launch("PauseScene", { returnScene: "Escena1Scene" });
     });
@@ -392,6 +397,9 @@ export class Escena1Scene extends Phaser.Scene {
     // 1. Animar la entrega física del Escudo Hoplón y toma de la Lanza Dory
     const handoffShield = this.add.image(this.wifeSprite.x - 16, GROUND_Y - 38, "hoplon_shield")
       .setDepth(21);
+    const handoffSpear = this.add.image(this.homeSpearProp.x, this.homeSpearProp.y, "dory_spear")
+      .setRotation(-1.42)
+      .setDepth(21);
 
     this.wifeSprite.setTexture("spartan_wife");
     if (this.homeSpearProp) {
@@ -410,6 +418,16 @@ export class Escena1Scene extends Phaser.Scene {
         this.player.equipGear();
         this.audio.playEquipGear();
       }
+    });
+
+    this.tweens.add({
+      targets: handoffSpear,
+      x: this.player.x + 18,
+      y: this.player.y - 24,
+      rotation: -0.22,
+      duration: 420,
+      ease: "Back.easeOut",
+      onComplete: () => handoffSpear.destroy()
     });
 
     // 2. Viñeta de la Esposa + Bocadillo dinámico del Soldado sin pausar el movimiento
@@ -491,6 +509,9 @@ export class Escena1Scene extends Phaser.Scene {
         x: messengerStopX + 20,
         duration: 1350,
         ease: "Cubic.easeOut",
+        onUpdate: () => {
+          scoutRider.y = GROUND_Y - 40 + Math.sin(this.time.now * 0.028) * 3.5;
+        },
         onComplete: resolve
       });
     });
@@ -504,6 +525,14 @@ export class Escena1Scene extends Phaser.Scene {
       .setDepth(19);
     this.audio.playMessengerFall();
     this.cameras.main.shake(160, 0.005);
+    this.tweens.add({
+      targets: this.fallenScout,
+      y: GROUND_Y - 14,
+      angle: -4,
+      duration: 180,
+      yoyo: true,
+      ease: "Quad.easeOut"
+    });
 
     this.generalSprite.setFlipX(true);
 
@@ -523,9 +552,11 @@ export class Escena1Scene extends Phaser.Scene {
       this.tweens.add({
         targets: ally,
         y: ally.y - 7,
+        scaleY: 1.08,
         duration: 140,
         delay: idx * 40,
-        yoyo: true
+        yoyo: true,
+        onComplete: () => ally.setScale(1)
       });
     });
 
@@ -547,6 +578,7 @@ export class Escena1Scene extends Phaser.Scene {
     });
 
     this.milestoneState.waitingGeneralInteract = true;
+    this.milestoneState.hito1_2Started = false;
     this.player.setControlEnabled(true);
     this.interactPrompt
       .setPosition(VILLAGE_LAYOUT.plaza.generalX + 25, GROUND_Y - 122)
@@ -643,14 +675,21 @@ export class Escena1Scene extends Phaser.Scene {
       this.player.body.setAllowGravity(false);
 
       const marchingUnits = [this.player, this.generalSprite, ...this.allyTroops];
-      marchingUnits.forEach((unit) => {
+      marchingUnits.forEach((unit, index) => {
         this.tweens.add({
           targets: unit,
           x: unit.x + 560,
           duration: 2800,
+          delay: index * 22,
           ease: "Linear",
           onUpdate: () => {
-            unit.angle = Math.sin(this.time.now * 0.014) * 1.6;
+            const cadence = Math.sin(this.time.now * 0.014 + index * 0.9) * 1.8;
+            unit.angle = cadence;
+            unit.scaleY = unit === this.player ? 1 + Math.abs(cadence) * 0.008 : 1;
+          },
+          onComplete: () => {
+            unit.setAngle(0);
+            unit.setScale(1);
           }
         });
       });

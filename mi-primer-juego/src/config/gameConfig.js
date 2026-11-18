@@ -19,6 +19,10 @@ export const gameConfig = {
   height: HEIGHT,
   parent: "game-container",
   backgroundColor: "#101b2d",
+  fps: {
+    target: 60,
+    smoothStep: true
+  },
   physics: {
     default: "arcade",
     arcade: {
