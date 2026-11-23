@@ -20,6 +20,9 @@ const DEFAULTS = {
   stamp: "full", // "full" | "block" | false
   frame: true,
   grain: true,
+  blur: 0,
+  animated: false,
+  animation: null,
   depth: 160,
   slideFrom: 0,
   slideAxis: "x"
@@ -53,9 +56,13 @@ export class CinematicPlate {
     this.texWidth = source.width;
     this.texHeight = source.height;
 
-    // Frame exclusivo para poder recortar sin afectar a otros plates
-    this.frameName = `cine_frame_${++plateCounter}`;
-    texture.add(this.frameName, 0, 0, 0, this.texWidth, this.texHeight);
+    // Frame exclusivo para poder recortar sin afectar a otros plates.
+    // Las ilustraciones animadas (hojas de sprites) no se recortan: se dibujan
+    // completas y su propio movimiento sostiene el plano.
+    if (!this.options.animated) {
+      this.frameName = `cine_frame_${++plateCounter}`;
+      texture.add(this.frameName, 0, 0, 0, this.texWidth, this.texHeight);
+    }
 
     this.container = scene.add.container(this.options.x, this.options.y)
       .setDepth(this.options.depth)
@@ -83,9 +90,16 @@ export class CinematicPlate {
       height
     );
 
-    this.image = this.scene.add.image(0, 0, this.options.texture, this.frameName)
-      .setOrigin(0.5);
+    if (this.options.animated && this.options.animation) {
+      this.image = this.scene.add.sprite(0, 0, this.options.texture).setOrigin(0.5);
+      this.image.play(this.options.animation);
+      this.image.setDisplaySize(width, height);
+    } else {
+      this.image = this.scene.add.image(0, 0, this.options.texture, this.frameName)
+        .setOrigin(0.5);
+    }
     this.container.add(this.image);
+    this.applyBlur();
 
     this.container.add(this.createVignette(width, height));
 
@@ -108,8 +122,20 @@ export class CinematicPlate {
     }
   }
 
-  createVignette(width, height) {
-    const graphics = this.scene.add.graphics();
+  /**
+   * Desenfoque opcional del plate (Phaser 4: los filtros sustituyen a los FX).
+   * Se usa para "vista nublada" en los momentos críticos de la campaña.
+   */
+  applyBlur() {
+    const blur = this.options.blur;
+    if (!blur || blur <= 0) return;
+    if (typeof this.image.enableFilters !== "function") return;
+
+    this.image.enableFilters();
+    this.image.filters?.internal.addBlur(1, blur, blur, 1);
+  }
+
+  createVignette(width, height) {    const graphics = this.scene.add.graphics();
     const strips = 16;
     const depth = Math.max(26, Math.round(height * 0.14));
     const step = depth / strips;
@@ -244,6 +270,8 @@ export class CinematicPlate {
   // ==========================================================================
 
   applyFraming(zoom, panX, panY) {
+    if (this.options.animated) return;
+
     const { width, height, focus } = this.options;
     const focusWidth = Math.max(0.02, focus.width) * this.texWidth;
     const focusHeight = Math.max(0.02, focus.height) * this.texHeight;
@@ -329,21 +357,24 @@ export class CinematicPlate {
   startKenBurns() {
     const { zoomFrom, zoomTo, panFromX, panToX, panFromY, panToY, duration } = this.options;
 
-    this.kbProxy = { t: 0 };
-    this.kbTween = this.scene.tweens.add({
-      targets: this.kbProxy,
-      t: 1,
-      duration: Math.max(1200, duration),
-      ease: "Sine.easeInOut",
-      onUpdate: () => {
-        const t = this.kbProxy.t;
-        this.applyFraming(
-          Phaser.Math.Linear(zoomFrom, zoomTo, t),
-          Phaser.Math.Linear(panFromX, panToX, t),
-          Phaser.Math.Linear(panFromY, panToY, t)
-        );
-      }
-    });
+    // Las ilustraciones animadas ya traen su propio movimiento: solo se les anima el grano
+    if (!this.options.animated) {
+      this.kbProxy = { t: 0 };
+      this.kbTween = this.scene.tweens.add({
+        targets: this.kbProxy,
+        t: 1,
+        duration: Math.max(1200, duration),
+        ease: "Sine.easeInOut",
+        onUpdate: () => {
+          const t = this.kbProxy.t;
+          this.applyFraming(
+            Phaser.Math.Linear(zoomFrom, zoomTo, t),
+            Phaser.Math.Linear(panFromX, panToX, t),
+            Phaser.Math.Linear(panFromY, panToY, t)
+          );
+        }
+      });
+    }
 
     if (this.grain) {
       this.scene.tweens.add({

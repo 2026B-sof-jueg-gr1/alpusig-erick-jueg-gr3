@@ -18,7 +18,7 @@ Uso:
 import argparse
 import os
 
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(ROOT, "mi-primer-juego", "assets")
@@ -47,6 +47,10 @@ PORTRAITS = [
     ("esposa/esposa.webp", "hd_portrait_wife", 0.52, 0.44, 1320, "warm"),
     ("soldado/soldado.webp", "hd_portrait_soldier", 0.47, 0.21, 980, "resolve"),
     ("soldado/soldado.webp", "hd_portrait_soldier_thought", 0.47, 0.21, 1120, "thought"),
+    ("soldado/soldado.webp", "hd_portrait_soldier_shock", 0.47, 0.20, 1040, "shock"),
+    ("soldado/soldado.webp", "hd_portrait_soldier_despair", 0.47, 0.21, 1120, "despair"),
+    ("soldado/soldado.webp", "hd_portrait_soldier_penance", 0.47, 0.19, 980, "penance"),
+    ("general/general.webp", "hd_portrait_general_sepia", 0.50, 0.20, 1000, "sepia"),
     ("general/general.webp", "hd_portrait_general_fierce", 0.50, 0.19, 900, "fierce"),
     ("general/general.webp", "hd_portrait_general_frown", 0.50, 0.20, 1040, "frown"),
     ("general/general.webp", "hd_portrait_general_smirk", 0.50, 0.21, 1180, "smirk"),
@@ -54,11 +58,21 @@ PORTRAITS = [
     ("familia/familia.webp", "hd_portrait_family", 0.50, 0.50, 1520, "warm"),
 ]
 
+# GIF animados -> hoja de sprites (Phaser no reproduce GIF animados en canvas).
+# (archivo, clave, ancho de frame, alto de frame, columnas, filas)
+GIF_SHEETS = [
+    ("Escena 3 Cenizas del Deber/Hito3_3.gif", "cine_hito3_3_sheet", 900, 506, 4, 8),
+]
+
 GRADES = {
     "fierce": {"contrast": 1.14, "color": 1.12, "brightness": 1.0, "tint": None},
     "frown": {"contrast": 1.08, "color": 0.82, "brightness": 0.86, "tint": (0x22, 0x33, 0x4d, 0.10)},
     "smirk": {"contrast": 1.05, "color": 1.06, "brightness": 1.05, "tint": (0x8a, 0x4a, 0x1e, 0.07)},
     "thought": {"contrast": 0.98, "color": 0.62, "brightness": 1.02, "tint": (0x33, 0x4a, 0x66, 0.12)},
+    "shock": {"contrast": 1.22, "color": 0.3, "brightness": 0.9, "tint": (0x1c, 0x28, 0x38, 0.2)},
+    "despair": {"contrast": 1.16, "color": 0.4, "brightness": 0.82, "tint": (0x24, 0x1a, 0x18, 0.22)},
+    "penance": {"contrast": 1.24, "color": 0.32, "brightness": 0.74, "tint": (0x2a, 0x12, 0x10, 0.26)},
+    "sepia": {"contrast": 1.05, "color": 1.0, "brightness": 1.0, "tint": None, "mode": "sepia"},
     "resolve": {"contrast": 1.07, "color": 1.04, "brightness": 1.01, "tint": None},
     "warm": {"contrast": 1.02, "color": 1.03, "brightness": 1.02, "tint": (0x9a, 0x5a, 0x28, 0.05)},
 }
@@ -68,6 +82,11 @@ def apply_grade(image, grade_name):
     grade = GRADES.get(grade_name)
     if not grade:
         return image
+
+    if grade.get("mode") == "sepia":
+        gray = image.convert("L")
+        result = ImageOps.colorize(gray, black=(38, 24, 14), white=(236, 216, 182))
+        return ImageEnhance.Contrast(result).enhance(grade["contrast"])
 
     result = ImageEnhance.Brightness(image).enhance(grade["brightness"])
     result = ImageEnhance.Contrast(result).enhance(grade["contrast"])
@@ -129,9 +148,40 @@ def build_portraits():
         print(f"  portrait {key:26s} {size_kb:6.0f} KB")
 
 
+def build_gif_sheets():
+    for relative_path, key, frame_width, frame_height, cols, rows in GIF_SHEETS:
+        source = os.path.join(ASSETS, relative_path)
+        if not os.path.exists(source):
+            print(f"  ! falta {relative_path}")
+            continue
+
+        gif = Image.open(source)
+        frame_count = getattr(gif, "n_frames", 1)
+        capacity = cols * rows
+        if frame_count > capacity:
+            print(f"  ! {key}: {frame_count} frames no caben en {cols}x{rows}")
+            continue
+
+        sheet = Image.new("RGB", (frame_width * cols, frame_height * rows), (8, 6, 8))
+        for index in range(frame_count):
+            gif.seek(index)
+            frame = gif.convert("RGB").resize((frame_width, frame_height), Image.LANCZOS)
+            # Compensa la ampliación desde 640x360 con un enfoque suave
+            frame = frame.filter(ImageFilter.UnsharpMask(radius=1.6, percent=65, threshold=2))
+            sheet.paste(frame, ((index % cols) * frame_width, (index // cols) * frame_height))
+
+        destination = os.path.join(OUT_DIR, f"{key}.webp")
+        sheet.save(destination, "WEBP", quality=82, method=6)
+        size_kb = os.path.getsize(destination) / 1024
+        print(
+            f"  gif    {key:18s} {sheet.size[0]}x{sheet.size[1]}  "
+            f"{frame_count} frames de {frame_width}x{frame_height}  {size_kb:6.0f} KB"
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Genera los recursos cinematográficos optimizados.")
-    parser.add_argument("--only", choices=["plates", "portraits"], help="Genera solo un grupo de recursos.")
+    parser.add_argument("--only", choices=["plates", "portraits", "gifs"], help="Genera solo un grupo de recursos.")
     arguments = parser.parse_args()
 
     ensure_out_dir()
@@ -144,6 +194,10 @@ def main():
     if arguments.only in (None, "portraits"):
         print("Retratos HD:")
         build_portraits()
+
+    if arguments.only in (None, "gifs"):
+        print("Hojas de sprites animadas:")
+        build_gif_sheets()
 
     print("Listo.")
 

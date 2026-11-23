@@ -19,6 +19,7 @@ export class CinematicDirector {
     this.audio = audio;
     this.plates = new Set();
     this.insets = new Set();
+    this.atmospheres = new Set();
     this.letterboxBars = null;
     this.dimLayer = null;
 
@@ -36,6 +37,8 @@ export class CinematicDirector {
       label: plate.label,
       title: plate.title,
       caption: plate.caption,
+      animated: plate.animated ?? false,
+      animation: plate.animation ?? null,
       focus: shot.focus || FULL_FRAME,
       zoomFrom: shot.zoomFrom ?? 1.02,
       zoomTo: shot.zoomTo ?? 1.08,
@@ -85,8 +88,9 @@ export class CinematicDirector {
 
     const width = options.width ?? WIDTH - 24;
     const height = options.height ?? Math.round(width / PLATE_ASPECT);
+    const useLetterbox = options.letterbox !== false;
 
-    this.letterbox(true, options.letterboxDuration ?? 480, height);
+    if (useLetterbox) this.letterbox(true, options.letterboxDuration ?? 480, height);
 
     const plate = this.createPlate(base, {
       ...options,
@@ -99,6 +103,8 @@ export class CinematicDirector {
       slideFrom: 0
     });
 
+    const atmosphere = this.createAtmosphere(options.atmosphere);
+
     plate.show();
     this.audio?.playCinematicRiser?.();
 
@@ -107,8 +113,220 @@ export class CinematicDirector {
 
     await plate.hide({ duration: 380 });
     this.plates.delete(plate);
-    this.letterbox(false, 420);
+    this.destroyAtmosphere(atmosphere);
+    if (useLetterbox) this.letterbox(false, 420);
     return null;
+  }
+
+  // ==========================================================================
+  // PLATE A PANTALLA COMPLETA SIN CIERRE AUTOMÁTICO
+  // ==========================================================================
+
+  /**
+   * Muestra un plate a pantalla completa y lo deja en escena para que la propia
+   * escena superponga capas (viñetas, oscurecido, títulos) antes de cerrarlo.
+   */
+  showFullscreenPlate(plateKey, shotName, options = {}) {
+    const base = this.resolve(plateKey, shotName);
+    if (!base) return null;
+
+    const width = options.width ?? WIDTH - 24;
+    const height = options.height ?? Math.round(width / PLATE_ASPECT);
+
+    if (options.letterbox !== false) this.letterbox(true, options.letterboxDuration ?? 480, height);
+
+    const plate = this.createPlate(base, {
+      ...options,
+      x: WIDTH / 2,
+      y: HEIGHT / 2,
+      width,
+      height,
+      depth: options.depth ?? 160,
+      stamp: options.stamp ?? "full",
+      slideFrom: 0
+    });
+
+    const atmosphere = this.createAtmosphere(options.atmosphere);
+    if (atmosphere) plate.atmosphere = atmosphere;
+
+    plate.show({ duration: options.fadeIn ?? 400 });
+    this.audio?.playCinematicRiser?.();
+    return plate;
+  }
+
+  async closeFullscreenPlate(plate, { duration = 380, letterbox = true } = {}) {
+    if (plate && !plate.isDestroyed) {
+      this.destroyAtmosphere(plate.atmosphere);
+      plate.atmosphere = null;
+      await plate.hide({ duration });
+      this.plates.delete(plate);
+    }
+
+    if (letterbox) this.letterbox(false, 420);
+  }
+
+  // ==========================================================================
+  // SECUENCIA DE PLANOS (CORTES DENTRO DE UNA MISMA ILUSTRACIÓN)
+  // ==========================================================================
+
+  /**
+   * Encadena varios encuadres del mismo plate a pantalla completa, como cortes
+   * de cámara. Cada paso admite `effect: "impact"` para sacudir y destellar.
+   */
+  async playShotSequence(plateKey, shots = [], options = {}) {
+    if (!shots.length) return;
+
+    const width = options.width ?? WIDTH - 24;
+    const height = options.height ?? Math.round(width / PLATE_ASPECT);
+    const useLetterbox = options.letterbox !== false;
+
+    if (useLetterbox) this.letterbox(true, options.letterboxDuration ?? 420, height);
+    const atmosphere = this.createAtmosphere(options.atmosphere);
+
+    for (const [index, shotConfig] of shots.entries()) {
+      const base = this.resolve(plateKey, shotConfig.shot);
+      if (!base) continue;
+
+      // El sello de capítulo solo abre la secuencia; los cortes siguientes van limpios
+      const stamp = shotConfig.stamp ?? (index === 0 ? options.stamp ?? "full" : false);
+
+      const plate = this.createPlate(base, {
+        ...options,
+        ...shotConfig,
+        x: WIDTH / 2,
+        y: HEIGHT / 2,
+        width,
+        height,
+        depth: 160,
+        stamp,
+        slideFrom: 0,
+        duration: shotConfig.hold ?? 1800
+      });
+
+      plate.show({ duration: shotConfig.fadeIn ?? 240 });
+
+      if (shotConfig.effect === "impact") {
+        this.impactFlash();
+      }
+
+      await this.wait(shotConfig.hold ?? 1800);
+      await plate.hide({ duration: shotConfig.fadeOut ?? 260 });
+      this.plates.delete(plate);
+    }
+
+    this.destroyAtmosphere(atmosphere);
+    if (useLetterbox) this.letterbox(false, 420);
+  }
+
+  /** Corte breve a pantalla completa sin marco ni letterbox (golpe de ambush). */
+  async playFlash(plateKey, shotName, options = {}) {
+    const base = this.resolve(plateKey, shotName);
+    if (!base) return;
+
+    const plate = this.createPlate(base, {
+      ...options,
+      x: WIDTH / 2,
+      y: HEIGHT / 2,
+      width: WIDTH,
+      height: HEIGHT,
+      depth: 162,
+      stamp: false,
+      frame: false,
+      caption: options.caption ?? "",
+      slideFrom: 0
+    });
+
+    const atmosphere = this.createAtmosphere(options.atmosphere);
+    plate.show({ duration: options.fadeIn ?? 120 });
+
+    await this.wait(options.hold ?? 1200);
+
+    await plate.hide({ duration: options.fadeOut ?? 200 });
+    this.plates.delete(plate);
+    this.destroyAtmosphere(atmosphere);
+  }
+
+  impactFlash() {
+    this.scene.cameras.main.shake(280, 0.014);
+
+    const flash = this.scene.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0xff2b2b, 0.55)
+      .setScrollFactor(0)
+      .setDepth(178);
+
+    this.scene.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: 420,
+      ease: "Quad.easeOut",
+      onComplete: () => flash.destroy()
+    });
+  }
+
+  // ==========================================================================
+  // ATMÓSFERA SOBRE EL PLATE (lluvia, ceniza, flechas)
+  // ==========================================================================
+
+  destroyAtmosphere(emitter) {
+    if (!emitter) return;
+    this.atmospheres.delete(emitter);
+    if (emitter.active) emitter.destroy();
+  }
+
+  createAtmosphere(type) {    if (!type) return null;
+
+    const presets = {
+      rain: {
+        texture: "rain_drop",
+        config: {
+          x: { min: -60, max: WIDTH + 60 },
+          y: -40,
+          lifespan: 760,
+          speedX: { min: -175, max: -125 },
+          speedY: { min: 700, max: 860 },
+          quantity: 3,
+          frequency: 22,
+          alpha: { start: 0.55, end: 0.15 }
+        }
+      },
+      ash: {
+        texture: "ash_mote",
+        config: {
+          x: { min: 0, max: WIDTH },
+          y: { min: -20, max: HEIGHT * 0.5 },
+          lifespan: 4200,
+          speedX: { min: -55, max: -15 },
+          speedY: { min: 20, max: 55 },
+          scale: { start: 0.6, end: 1.1 },
+          alpha: { start: 0.55, end: 0 },
+          quantity: 1,
+          frequency: 140
+        }
+      },
+      embers: {
+        texture: "ember_spark",
+        config: {
+          x: { min: 0, max: WIDTH },
+          y: { min: HEIGHT * 0.55, max: HEIGHT + 20 },
+          lifespan: 3200,
+          speedY: { min: -95, max: -35 },
+          speedX: { min: -30, max: 22 },
+          scale: { start: 1.1, end: 0.2 },
+          alpha: { start: 0.9, end: 0 },
+          quantity: 1,
+          frequency: 90
+        }
+      }
+    };
+
+    const preset = presets[type];
+    if (!preset || !this.scene.textures.exists(preset.texture)) return null;
+
+    const emitter = this.scene.add.particles(0, 0, preset.texture, preset.config)
+      .setScrollFactor(0)
+      .setDepth(168);
+
+    this.atmospheres.add(emitter);
+    return emitter;
   }
 
   // ==========================================================================
@@ -284,6 +502,11 @@ export class CinematicDirector {
     this.plates.forEach((plate) => plate.destroy());
     this.plates.clear();
     this.insets.clear();
+
+    this.atmospheres.forEach((emitter) => {
+      if (emitter?.active) emitter.destroy();
+    });
+    this.atmospheres.clear();
 
     this.letterboxBars?.destroy();
     this.letterboxBars = null;

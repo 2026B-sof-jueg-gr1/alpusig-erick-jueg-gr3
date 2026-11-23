@@ -666,74 +666,6 @@ export class TextureGenerator {
       g.lineStyle(2, 0xffffff).strokeLineShape(new Phaser.Geom.Line(1, 7, 13, 7));
       g.lineStyle(2, 0xffffff).strokeLineShape(new Phaser.Geom.Line(7, 1, 7, 13));
     });
-
-    // Cinemática Hito 2.2: Plano Primera Persona 3D al ras del suelo
-    const drawFPGeneralBase = (g, { impaled = false, kneeling = false } = {}) => {
-      const yShift = kneeling ? 38 : 0;
-      // Capa carmesí desgarrada
-      g.fillStyle(0x7f1313).fillTriangle(95, 58 + yShift, 18, 228, 172, 228);
-      // Cuerpo / coraza ornamentada de bronce manchada
-      g.fillStyle(SPARTA_COLORS.bronze).fillRoundedRect(54, 58 + yShift, 82, 102, 16);
-      g.lineStyle(3, SPARTA_COLORS.bronzeLight).strokeRect(64, 72 + yShift, 62, 54);
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.7).fillCircle(78, 96 + yShift, 12);
-      // Casco corintio y gran penacho
-      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(95, 16 + yShift, 58, 22);
-      g.fillStyle(SPARTA_COLORS.bronzeLight).fillCircle(95, 38 + yShift, 22);
-      g.fillStyle(0x140f0d).fillRect(80, 33 + yShift, 30, 12);
-      g.fillStyle(0xffffff).fillCircle(88, 39 + yShift, 2.5).fillCircle(102, 39 + yShift, 2.5);
-      // Piernas o rodillas
-      if (!kneeling) {
-        g.fillStyle(0xb58057).fillRect(62, 160, 22, 92).fillRect(106, 160, 22, 92);
-        g.fillStyle(SPARTA_COLORS.bronze).fillRect(62, 198, 22, 42).fillRect(106, 198, 22, 42);
-      } else {
-        g.fillStyle(0xb58057).fillRect(58, 162 + yShift - 18, 74, 34);
-      }
-      // Mano ensangrentada extendida hacia el jugador (cámara)
-      if (!impaled) {
-        g.fillStyle(0xc68e62).fillRoundedRect(118, 94 + yShift, 52, 24, 8);
-        g.fillStyle(GORGE_COLORS.bloodRed).fillCircle(154, 106 + yShift, 11);
-      } else {
-        // Punta de lanza argiva atravesando brutalmente el pecho desde atrás
-        g.lineStyle(7, 0x3f2c1e).strokeLineShape(new Phaser.Geom.Line(95, 92 + yShift, 152, 72 + yShift));
-        g.fillStyle(0xe2e8f0).fillTriangle(86, 86 + yShift, 102, 122 + yShift, 118, 92 + yShift);
-        g.fillStyle(GORGE_COLORS.bloodRed).fillCircle(98, 98 + yShift, 18);
-      }
-    };
-
-    this.createTexture(scene, "fp_general_approach", 190, 270, (g) => drawFPGeneralBase(g));
-    this.createTexture(scene, "fp_general_impaled", 190, 270, (g) => drawFPGeneralBase(g, { impaled: true }));
-    this.createTexture(scene, "fp_general_kneeling", 190, 220, (g) => drawFPGeneralBase(g, { impaled: true, kneeling: true }));
-
-    this.createTexture(scene, "fp_general_dead", 220, 120, (g) => {
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.88).fillEllipse(110, 88, 175, 42);
-      g.fillStyle(0x7a1212).fillRoundedRect(26, 48, 148, 46, 14);
-      g.fillStyle(SPARTA_COLORS.bronze).fillRoundedRect(54, 38, 86, 44, 12);
-      g.fillStyle(SPARTA_COLORS.bronzeLight).fillCircle(156, 58, 22);
-      g.fillStyle(SPARTA_COLORS.crimsonBright).fillEllipse(164, 38, 36, 14);
-    });
-
-    this.createTexture(scene, "fp_player_hand", 110, 130, (g) => {
-      g.fillStyle(0xb58057).fillRoundedRect(20, 44, 48, 86, 14);
-      g.fillStyle(0x5c3a21).fillRect(20, 76, 48, 24);
-      g.fillStyle(0xc68e62).fillCircle(44, 36, 22);
-      g.fillStyle(0xc68e62).fillRect(24, 8, 8, 28).fillRect(36, 4, 8, 30).fillRect(48, 8, 8, 28);
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.65).fillCircle(40, 56, 14);
-    });
-
-    // Retrato del Soldado en estado de shock (Hito 2.2)
-    this.createTexture(scene, "portrait_soldier_shock", 72, 72, (g) => {
-      g.fillStyle(0x2d1a1a).fillRect(0, 0, 72, 72);
-      g.fillStyle(0x6e1919).fillCircle(36, 74, 28);
-      g.fillStyle(0xc6936c).fillCircle(36, 33, 17);
-      g.fillStyle(0x2a1d17).fillEllipse(36, 19, 34, 13);
-      g.fillStyle(0x2a1d17).fillRoundedRect(24, 39, 24, 12, 4);
-      // Ojos muy abiertos en shock
-      g.fillStyle(0xffffff).fillCircle(30, 30, 4.5).fillCircle(42, 30, 4.5);
-      g.fillStyle(0x111111).fillCircle(30, 30, 1.8).fillCircle(42, 30, 1.8);
-      // Salpicaduras de barro y sangre
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.75).fillCircle(44, 40, 3.5);
-      g.fillStyle(0x4d3c2f, 0.7).fillCircle(24, 35, 3);
-    });
   }
 
   // --------------------------------------------------------------------------
@@ -853,15 +785,6 @@ export class TextureGenerator {
       g.fillStyle(0xd69d70).fillCircle(14, 18, 7);
     });
 
-    this.createTexture(scene, "toy_shield_broken", 34, 26, (g) => {
-      // Dos mitades del escudo de madera de juguete manchadas de ceniza
-      g.fillStyle(0x52341c).fillEllipse(10, 14, 16, 18);
-      g.fillStyle(0x4a2f19).fillEllipse(24, 16, 14, 16);
-      g.fillStyle(0x1f1d1c, 0.65).fillCircle(14, 14, 7);
-      g.lineStyle(2, 0x8f1d1d).strokeLineShape(new Phaser.Geom.Line(7, 17, 12, 9));
-      g.strokeLineShape(new Phaser.Geom.Line(22, 10, 27, 19));
-    });
-
     // Partículas de llamas, brasas y humo denso
     this.createTexture(scene, "fire_flame", 22, 30, (g) => {
       g.fillStyle(ASHES_COLORS.emberOrange, 0.78).fillEllipse(11, 19, 18, 20);
@@ -876,104 +799,6 @@ export class TextureGenerator {
     this.createTexture(scene, "black_smoke", 48, 48, (g) => {
       g.fillStyle(ASHES_COLORS.smokeDark, 0.55).fillCircle(24, 24, 21);
       g.fillStyle(0x272326, 0.45).fillCircle(19, 20, 14);
-    });
-
-    // Cinemática Final Hito 3.3 (Vista de espalda y tabla familiar en cenizas)
-    this.createTexture(scene, "fp3_soldier_back", 120, 164, (g) => {
-      // Piernas firmes deteniéndose en el umbral
-      g.fillStyle(0x9f714c).fillRect(36, 102, 16, 56).fillRect(68, 102, 16, 56);
-      g.fillStyle(SPARTA_COLORS.bronze).fillRect(36, 126, 16, 26).fillRect(68, 126, 16, 26);
-      // Capa desgarrada y espalda manchada
-      g.fillStyle(0x5b1012).fillTriangle(30, 38, 90, 38, 22, 138);
-      g.fillStyle(0x6e1919).fillRoundedRect(28, 38, 64, 72, 12);
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.8).fillCircle(46, 68, 13);
-      // Cabeza y nuca desde atrás
-      g.fillStyle(0x231712).fillCircle(60, 24, 20);
-      // Lanza sujeta en mano derecha
-      this.drawDory(g, 92, 152, 104, 14);
-    });
-
-    this.createTexture(scene, "fp3_soldier_kneeling", 120, 118, (g) => {
-      g.fillStyle(0x5b1012).fillTriangle(32, 30, 88, 30, 24, 108);
-      g.fillStyle(0x6e1919).fillRoundedRect(32, 30, 56, 58, 12);
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.8).fillCircle(48, 56, 12);
-      g.fillStyle(0x9f714c).fillRect(28, 82, 64, 28);
-      g.fillStyle(0x231712).fillCircle(60, 18, 18);
-    });
-
-    this.createTexture(scene, "fp3_family_bodies", 240, 96, (g) => {
-      // Ceniza en el suelo
-      g.fillStyle(0x2b2726, 0.75).fillEllipse(120, 68, 220, 44);
-      // Esposa caída
-      g.fillStyle(0xbfb19a).fillRoundedRect(24, 34, 96, 36, 10);
-      g.fillStyle(0xc88d65).fillCircle(30, 44, 13);
-      g.fillStyle(0x3a241b).fillCircle(24, 42, 13);
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.7).fillCircle(74, 52, 11);
-      // Niño y niña junto a ella
-      g.fillStyle(0x7c6244).fillRoundedRect(126, 40, 56, 26, 8);
-      g.fillStyle(0xc68e62).fillCircle(176, 48, 9);
-      g.fillStyle(0x9c4b35).fillRoundedRect(142, 54, 52, 24, 8);
-      g.fillStyle(0xd29c76).fillCircle(190, 62, 9);
-    });
-
-    this.createTexture(scene, "fp3_soldier_embracing", 250, 120, (g) => {
-      g.fillStyle(0x2b2726, 0.75).fillEllipse(125, 92, 230, 44);
-      // Cuerpos de la familia bajo su abrazo
-      g.fillStyle(0xbfb19a).fillRoundedRect(88, 56, 118, 36, 10);
-      g.fillStyle(0x7c6244).fillRoundedRect(136, 62, 68, 28, 8);
-      // Soldado inclinado abrazándolos entre las cenizas
-      g.fillStyle(0x5b1012).fillRoundedRect(32, 34, 86, 54, 14);
-      g.fillStyle(0xb58057).fillRoundedRect(86, 48, 56, 20, 8);
-      g.fillStyle(0x231712).fillCircle(72, 26, 18);
-    });
-
-    // Retratos para viñetas de Escena 3
-    this.createTexture(scene, "portrait_soldier_despair", 72, 72, (g) => {
-      g.fillStyle(0x2d1412).fillRect(0, 0, 72, 72);
-      g.fillStyle(0x6e1919).fillCircle(36, 74, 28);
-      g.fillStyle(0xc6936c).fillCircle(36, 33, 17);
-      g.fillStyle(0x2a1d17).fillEllipse(36, 19, 34, 13);
-      g.fillStyle(0x2a1d17).fillRoundedRect(24, 39, 24, 12, 4);
-      g.fillStyle(0xffffff).fillCircle(30, 30, 4).fillCircle(42, 30, 4);
-      g.fillStyle(0x111111).fillCircle(30, 30, 1.8).fillCircle(42, 30, 1.8);
-      g.fillStyle(0x1f1d1c, 0.5).fillCircle(26, 37, 5).fillCircle(46, 36, 4);
-    });
-
-    this.createTexture(scene, "portrait_general_sepia", 72, 72, (g) => {
-      g.fillStyle(0xc2a378).fillRect(0, 0, 72, 72);
-      g.fillStyle(0x6e4726).fillEllipse(36, 12, 42, 15);
-      g.fillStyle(0x9c7648).fillRoundedRect(18, 18, 36, 42, 12);
-      g.fillStyle(0x3a2614).fillRect(24, 31, 24, 9);
-      g.fillStyle(0xe8d5b5).fillCircle(30, 35, 2).fillCircle(42, 35, 2);
-      g.lineStyle(2.5, 0x3a2614).strokeLineShape(new Phaser.Geom.Line(28, 49, 44, 49));
-    });
-
-    this.createTexture(scene, "portrait_hands_ash_blood", 72, 72, (g) => {
-      g.fillStyle(0x191615).fillRect(0, 0, 72, 72);
-      // Dos manos abiertas cubiertas de hollín y sangre
-      g.fillStyle(0xb58057).fillRoundedRect(12, 28, 22, 34, 6);
-      g.fillStyle(0xb58057).fillRoundedRect(38, 28, 22, 34, 6);
-      [14, 20, 26, 40, 46, 52].forEach((fx) => {
-        g.fillStyle(0xb58057).fillRect(fx, 14, 4, 16);
-      });
-      g.fillStyle(GORGE_COLORS.bloodRed, 0.85).fillCircle(24, 42, 9).fillCircle(49, 38, 10);
-      g.fillStyle(0x1f1d1c, 0.7).fillCircle(19, 34, 7).fillCircle(45, 48, 8);
-    });
-
-    this.createTexture(scene, "portrait_soldier_penance", 72, 72, (g) => {
-      g.fillStyle(0x120d0c).fillRect(0, 0, 72, 72);
-      g.fillStyle(0x5b1012).fillCircle(36, 74, 28);
-      g.fillStyle(0xba8863).fillCircle(36, 33, 17);
-      // Manchas de hollín en rostro
-      g.fillStyle(0x1e1a18, 0.6).fillCircle(28, 38, 6).fillCircle(44, 35, 5);
-      g.fillStyle(0x231712).fillEllipse(36, 18, 34, 13);
-      g.fillStyle(0x231712).fillRoundedRect(24, 39, 24, 13, 4);
-      // Cejas marcadas de odio absoluto y lágrimas claras sobre el hollín
-      g.lineStyle(2.5, 0x0f0c0b);
-      g.strokeLineShape(new Phaser.Geom.Line(26, 25, 34, 29));
-      g.strokeLineShape(new Phaser.Geom.Line(46, 25, 38, 29));
-      g.fillStyle(0xffffff).fillCircle(30, 30, 2.2).fillCircle(42, 30, 2.2);
-      g.fillStyle(0xdbeafe, 0.85).fillRect(29, 33, 2, 7).fillRect(41, 33, 2, 7);
     });
   }
 }

@@ -1,8 +1,10 @@
 import { WIDTH, HEIGHT, GROUND_Y, SPARTA_COLORS, ASHES_COLORS } from "../config/constants.js";
 import { VILLAGE_LAYOUT } from "../config/villageLayout.js";
+import { CINEMATIC_PORTRAITS } from "../config/cinematicConfig.js";
 import { SpartanPlayer, SPARTAN_STATES } from "../entities/SpartanPlayer.js";
 import { AudioManager } from "../managers/AudioManager.js";
 import { ComicNarrativeManager } from "../managers/ComicNarrativeManager.js";
+import { CinematicDirector } from "../managers/CinematicDirector.js";
 
 /**
  * ESCENA 3: Cenizas del Deber
@@ -12,7 +14,7 @@ import { ComicNarrativeManager } from "../managers/ComicNarrativeManager.js";
  * en sentido inverso (de derecha a izquierda) bajo un pueblo destruido y en llamas:
  * - Hito 3.1: El Humo en el Horizonte (Estado 3: herido, llegada al pórtico).
  * - Hito 3.2: El Recorrido del Horror (Estado 4: sprint desesperado entre llamas).
- * - Hito 3.3: El Quiebre del Espartano (Cinemática final 3D, 3 viñetas y cierre).
+ * - Hito 3.3: El Quiebre del Espartano (ilustración animada, 3 viñetas y cierre).
  */
 export class Escena3Scene extends Phaser.Scene {
   constructor() {
@@ -26,6 +28,7 @@ export class Escena3Scene extends Phaser.Scene {
 
     this.audio = new AudioManager(this);
     this.narrative = new ComicNarrativeManager(this, this.audio);
+    this.cinematic = new CinematicDirector(this, this.audio);
 
     this.phaseState = {
       currentMilestone: "3.1",
@@ -58,7 +61,45 @@ export class Escena3Scene extends Phaser.Scene {
     this.createSceneHUD();
 
     this.audio.playAshenWindAmbient();
+    this.playIntroCinematic();
+  }
+
+  // ==========================================================================
+  // APERTURA CINEMATOGRÁFICA DEL HITO 3.1
+  // ==========================================================================
+
+  async playIntroCinematic() {
+    this.phaseState.inCinematic = true;
+    this.player.setControlEnabled(false);
+
     this.showChapterBanner();
+    await this.waitMs(1700);
+
+    if (this.chapterBanner?.active) {
+      const banner = this.chapterBanner;
+      this.chapterBanner = null;
+      this.tweens.killTweensOf(banner);
+      this.tweens.add({
+        targets: banner,
+        alpha: 0,
+        duration: 240,
+        onComplete: () => banner.destroy()
+      });
+    }
+
+    await this.cinematic.playFullscreen("hito3_1", "wide", {
+      hold: 3400,
+      atmosphere: "embers",
+      caption: "El humo se veía desde el valle. No era el humo de las cocinas.",
+      zoomFrom: 1.02,
+      zoomTo: 1.1,
+      panToX: -0.03
+    });
+
+    if (!this.sys.isActive()) return;
+
+    this.phaseState.inCinematic = false;
+    this.player.setControlEnabled(true);
   }
 
   // ==========================================================================
@@ -288,6 +329,7 @@ export class Escena3Scene extends Phaser.Scene {
 
   showChapterBanner() {
     const banner = this.add.container(WIDTH / 2, 114).setScrollFactor(0).setDepth(150).setAlpha(0);
+    this.chapterBanner = banner;
     const bg = this.add.graphics();
     bg.fillStyle(0x140d0c, 0.88).fillRoundedRect(-270, -34, 540, 68, 6);
     bg.lineStyle(2, SPARTA_COLORS.bronze, 0.9).strokeRoundedRect(-270, -34, 540, 68, 6);
@@ -314,7 +356,10 @@ export class Escena3Scene extends Phaser.Scene {
       duration: 550,
       hold: 2500,
       yoyo: true,
-      onComplete: () => banner.destroy()
+      onComplete: () => {
+        if (banner.active) banner.destroy();
+        if (this.chapterBanner === banner) this.chapterBanner = null;
+      }
     });
   }
 
@@ -367,14 +412,25 @@ export class Escena3Scene extends Phaser.Scene {
     this.cameras.main.shake(220, 0.008);
     this.objectiveText.setText("¡Descubre qué ocurrió en el pueblo!").setColor("#fca5a5");
 
+    // Corte ilustrado: los ancianos guardias yacen en el pórtico que él debía cubrir
+    this.cinematic.playFlash("hito3_1", "watchpost", {
+      hold: 1600,
+      atmosphere: "embers",
+      zoomFrom: 1.0,
+      zoomTo: 1.1,
+      fadeIn: 120,
+      fadeOut: 260
+    });
+
     await this.narrative.showVignette({
       corner: "top-left",
       variant: "thought",
       shaky: true,
       speaker: "Soldado",
-      portraitKey: "portrait_soldier_despair",
+      portraitKey: CINEMATIC_PORTRAITS.soldierDespair,
       text: "No... El ejército principal de Argos era una distracción en el valle. El verdadero ataque... vino por aquí.",
-      autoDismissDelay: 4200
+      autoDismissDelay: 4200,
+      depth: 200
     });
 
     if (!this.sys.isActive() || this.phaseState.inCinematic) {
@@ -412,6 +468,16 @@ export class Escena3Scene extends Phaser.Scene {
       duration: 3800,
       offsetY: 80
     });
+
+    // Viñeta ilustrada del recorrido, sobre el cielo para no tapar la carrera
+    this.cinematic.showInset("hito3_2", "sprint", {
+      width: 420,
+      x: WIDTH / 2,
+      y: 150,
+      hold: 4800,
+      slideFrom: 70,
+      slideAxis: "y"
+    });
   }
 
   // ==========================================================================
@@ -433,111 +499,46 @@ export class Escena3Scene extends Phaser.Scene {
 
     this.audio.fadeAmbient(900);
 
-    // 1. Plano 3D / Ilustración Dinámica con capas de profundidad en el umbral quemado
-    const fp3Container = this.add.container(0, 0).setScrollFactor(0).setDepth(145).setAlpha(0);
+    // 1. El umbral: ilustración animada del quiebre (GIF convertido a spritesheet)
+    const thresholdPlate = this.cinematic.showFullscreenPlate("hito3_3", "threshold", {
+      atmosphere: "embers",
+      caption: "La lanza cayó primero. Después cayeron sus rodillas."
+    });
 
-    const interiorBg = this.add.graphics();
-    interiorBg.fillGradientStyle(0x0b090a, 0x0b090a, 0x261611, 0x261611, 1);
-    interiorBg.fillRect(0, 0, WIDTH, HEIGHT);
+    await this.waitMs(1300);
 
-    // Suelo interior de ceniza en perspectiva convergente
-    interiorBg.fillStyle(0x1b1716, 1);
-    interiorBg.fillTriangle(WIDTH / 2, HEIGHT * 0.36, -160, HEIGHT, WIDTH + 160, HEIGHT);
-    interiorBg.lineStyle(2, 0x3b2217, 0.45);
-    interiorBg.strokeLineShape(new Phaser.Geom.Line(WIDTH / 2, HEIGHT * 0.36, 140, HEIGHT));
-    interiorBg.strokeLineShape(new Phaser.Geom.Line(WIDTH / 2, HEIGHT * 0.36, WIDTH - 140, HEIGHT));
-
-    // Resplandor tenue de brasas dentro de la casa destruida
-    const hearthGlow = this.add.ellipse(WIDTH * 0.5, HEIGHT * 0.52, 480, 210, ASHES_COLORS.emberOrange, 0.16);
-
-    // Cuerpos de la esposa, hijo e hija en el suelo interior + escudo de juguete partido
-    const familyBodies = this.add.image(WIDTH * 0.52, HEIGHT * 0.55, "fp3_family_bodies").setScale(1.18);
-    const brokenToyShield = this.add.image(WIDTH * 0.61, HEIGHT * 0.62, "toy_shield_broken").setScale(1.4);
-
-    // Vigas quemadas del marco en primer plano parallax
-    const doorframe = this.add.graphics();
-    doorframe.fillStyle(0x0e0a09, 0.94);
-    doorframe.fillRect(0, 0, 125, HEIGHT);
-    doorframe.fillRect(WIDTH - 125, 0, 125, HEIGHT);
-    doorframe.fillRect(0, 0, WIDTH, 68);
-    doorframe.lineStyle(6, 0x2a1810, 0.7);
-    doorframe.strokeLineShape(new Phaser.Geom.Line(125, 68, 125, HEIGHT));
-    doorframe.strokeLineShape(new Phaser.Geom.Line(WIDTH - 125, 68, WIDTH - 125, HEIGHT));
-
-    // Espalda del Soldado deteniéndose en el umbral
-    const soldierFigure = this.add.image(WIDTH * 0.47, HEIGHT * 0.82, "fp3_soldier_back").setScale(1.12);
-    const droppedSpear = this.add.image(WIDTH * 0.57, HEIGHT * 0.82, "dory_spear")
-      .setRotation(-0.18)
-      .setAlpha(0);
-
-    fp3Container.add([
-      interiorBg,
-      hearthGlow,
-      familyBodies,
-      brokenToyShield,
-      soldierFigure,
-      droppedSpear,
-      doorframe
-    ]);
-
-    await this.tweenPromise(fp3Container, { alpha: 1, duration: 750 });
-    await this.waitMs(1100);
-
-    // 2. El Soldado cae de rodillas, suelta su lanza Dory resonando en el suelo
-    soldierFigure.setTexture("fp3_soldier_kneeling");
-    soldierFigure.setY(HEIGHT * 0.78);
-    droppedSpear.setAlpha(1);
+    // La Dory resuena contra las cenizas del umbral
     this.audio.playSpearDrop();
     this.cameras.main.shake(110, 0.004);
 
-    this.tweens.add({
-      targets: droppedSpear,
-      y: HEIGHT * 0.86,
-      x: WIDTH * 0.62,
-      rotation: 0.08,
-      duration: 380,
-      ease: "Bounce.easeOut"
-    });
+    await this.waitMs(3600);
 
-    await this.waitMs(950);
-
-    // 3. Se arrastra hasta abrazar a su familia entre las cenizas
-    soldierFigure.setAlpha(0);
-    familyBodies.setAlpha(0);
-
-    const embraceTableau = this.add.image(WIDTH * 0.51, HEIGHT * 0.66, "fp3_soldier_embracing")
-      .setScale(1.18)
-      .setAlpha(0);
-    fp3Container.add(embraceTableau);
-    fp3Container.bringToTop(doorframe);
-
-    await this.tweenPromise(embraceTableau, { alpha: 1, duration: 650 });
-    await this.waitMs(850);
-
-    // 4. Pantalla oscurecida y secuencia de 3 viñetas de cómic dramáticas
+    // 2. La pantalla se oscurece sobre la ilustración y llegan las 3 viñetas
     const dimScreen = this.add.rectangle(WIDTH / 2, HEIGHT / 2, WIDTH, HEIGHT, 0x050406, 0)
       .setScrollFactor(0)
-      .setDepth(148);
-    await this.tweenPromise(dimScreen, { alpha: 0.68, duration: 650 });
+      .setDepth(165);
+    await this.tweenPromise(dimScreen, { alpha: 0.62, duration: 650 });
 
     // Viñeta 1: Recuerdo en tonos sepia de la voz del General
     await this.narrative.showVignette({
       corner: "top-left",
       variant: "sepia",
       speaker: "Recuerdo — General",
-      portraitKey: "portrait_general_sepia",
+      portraitKey: CINEMATIC_PORTRAITS.generalSepia,
       text: "Tu puesto está aquí, soldado. Alguien debe sostener el escudo...",
-      autoDismissDelay: 4200
+      autoDismissDelay: 4200,
+      depth: 200
     });
 
-    // Viñeta 2: Primer plano de las manos cubiertas de sangre y ceniza
+    // Viñeta 2: El peso de la culpa (las manos manchadas se ven en la ilustración)
     await this.narrative.showVignette({
       corner: "top-right",
       variant: "dramatic",
       speaker: "Soldado",
-      portraitKey: "portrait_hands_ash_blood",
+      portraitKey: CINEMATIC_PORTRAITS.soldierDespair,
       text: "Busqué la gloria lejos de mi hogar... y dejé la puerta abierta a la muerte.",
-      autoDismissDelay: 4600
+      autoDismissDelay: 4600,
+      depth: 200
     });
 
     // Viñeta 3: Rostro con lágrimas mezcladas con hollín y odio absoluto hacia sí mismo
@@ -546,16 +547,17 @@ export class Escena3Scene extends Phaser.Scene {
       variant: "dramatic",
       width: 560,
       speaker: "Soldado",
-      portraitKey: "portrait_soldier_penance",
+      portraitKey: CINEMATIC_PORTRAITS.soldierPenance,
       text: "No fue Argos quien los mató. Fui yo. Y cada gota de sangre que derrame desde hoy... será mi penitencia.",
-      autoDismissDelay: 5200
+      autoDismissDelay: 5200,
+      depth: 200
     });
 
-    // 5. Cierre de Parte 1: Alejamiento de la casa en llamas hacia cielo nocturno lleno de brasas
-    await this.playPart1ClosingTitleSequence(fp3Container, dimScreen);
+    // 3. Cierre de Parte 1
+    await this.playPart1ClosingTitleSequence(thresholdPlate, dimScreen);
   }
 
-  async playPart1ClosingTitleSequence(fp3Container, dimScreen) {
+  async playPart1ClosingTitleSequence(thresholdPlate, dimScreen) {
     this.phaseState.sceneCompleted = true;
     this.audio.playTragicClosingChord();
 
@@ -589,13 +591,13 @@ export class Escena3Scene extends Phaser.Scene {
     nightSkyContainer.add([skyBg, distantBurningHome]);
 
     await Promise.all([
-      this.tweenPromise(fp3Container, { alpha: 0, duration: 1100 }),
+      this.cinematic.closeFullscreenPlate(thresholdPlate, { duration: 1100, letterbox: false }),
       this.tweenPromise(dimScreen, { alpha: 0, duration: 1100 }),
       this.tweenPromise(nightSkyContainer, { y: 0, duration: 3600, ease: "Sine.easeInOut" })
     ]);
 
-    fp3Container.destroy();
     dimScreen.destroy();
+    this.cinematic.letterbox(false, 700);
 
     // Brasas ascendiendo hacia el cielo nocturno en primer plano del cierre
     this.add.particles(0, 0, "ember_spark", {

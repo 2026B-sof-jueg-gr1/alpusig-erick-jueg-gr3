@@ -1,6 +1,7 @@
 import { TextureGenerator } from "../utils/TextureGenerator.js";
 import { CUSTOM_TEXTURES } from "../config/assetsConfig.js";
 import { PLAYER_ANIMATIONS } from "../config/playerAnimations.js";
+import { CINEMATIC_ANIMATIONS } from "../config/cinematicConfig.js";
 
 /**
  * Escena inicial de arranque.
@@ -33,13 +34,18 @@ export class BootScene extends Phaser.Scene {
   create() {
     TextureGenerator.generateAll(this);
     this.registerPlayerAnimations();
+    this.registerAnimations(CINEMATIC_ANIMATIONS);
 
     document.getElementById("loading")?.remove();
     this.scene.start("MenuScene");
   }
 
   registerPlayerAnimations() {
-    PLAYER_ANIMATIONS.forEach((definition) => {
+    this.registerAnimations(PLAYER_ANIMATIONS);
+  }
+
+  registerAnimations(definitions) {
+    definitions.forEach((definition) => {
       if (this.anims.exists(definition.key)) return;
 
       const frames = Array.from({ length: definition.frameCount }, (_, index) => {

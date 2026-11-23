@@ -27,10 +27,25 @@ export const CUSTOM_TEXTURES = [
   { key: "cine_hito1_2", path: "assets/cine/cine_hito1_2.webp" },
   { key: "cine_hito1_3", path: "assets/cine/cine_hito1_3.webp" },
 
+  // Capa cinematográfica de la Escena 2 (desfiladero de Argos)
+  { key: "cine_hito2_1", path: "assets/cine/cine_hito2_1.webp" },
+  { key: "cine_hito2_2", path: "assets/cine/cine_hito2_2.webp" },
+  { key: "cine_hito2_3", path: "assets/cine/cine_hito2_3.webp" },
+
+  // Capa cinematográfica de la Escena 3 (pueblo en cenizas)
+  { key: "cine_hito3_1", path: "assets/cine/cine_hito3_1.webp" },
+  { key: "cine_hito3_2", path: "assets/cine/cine_hito3_2.webp" },
+  // Hoja de sprites generada a partir de Hito3_3.gif (30 frames de 900x506, rejilla 4x8)
+  { key: "cine_hito3_3_sheet", path: "assets/cine/cine_hito3_3_sheet.webp", frameWidth: 900, frameHeight: 506 },
+
   // Retratos HD para las viñetas de cómic de la Escena 1
   { key: "hd_portrait_wife", path: "assets/cine/hd_portrait_wife.webp" },
   { key: "hd_portrait_soldier", path: "assets/cine/hd_portrait_soldier.webp" },
   { key: "hd_portrait_soldier_thought", path: "assets/cine/hd_portrait_soldier_thought.webp" },
+  { key: "hd_portrait_soldier_shock", path: "assets/cine/hd_portrait_soldier_shock.webp" },
+  { key: "hd_portrait_soldier_despair", path: "assets/cine/hd_portrait_soldier_despair.webp" },
+  { key: "hd_portrait_soldier_penance", path: "assets/cine/hd_portrait_soldier_penance.webp" },
+  { key: "hd_portrait_general_sepia", path: "assets/cine/hd_portrait_general_sepia.webp" },
   { key: "hd_portrait_general_fierce", path: "assets/cine/hd_portrait_general_fierce.webp" },
   { key: "hd_portrait_general_frown", path: "assets/cine/hd_portrait_general_frown.webp" },
   { key: "hd_portrait_general_smirk", path: "assets/cine/hd_portrait_general_smirk.webp" },

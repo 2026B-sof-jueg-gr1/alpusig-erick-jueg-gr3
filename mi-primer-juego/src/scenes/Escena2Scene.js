@@ -1,18 +1,24 @@
 import { WIDTH, HEIGHT, GROUND_Y, SPARTA_COLORS, GORGE_COLORS } from "../config/constants.js";
 import { GORGE_LAYOUT } from "../config/gorgeLayout.js";
+import { CINEMATIC_PORTRAITS } from "../config/cinematicConfig.js";
 import { SpartanPlayer, SPARTAN_STATES } from "../entities/SpartanPlayer.js";
 import { ArgosEnemyManager } from "../entities/ArgosEnemyManager.js";
 import { SpartanCombatHUD } from "../ui/SpartanCombatHUD.js";
 import { AudioManager } from "../managers/AudioManager.js";
 import { ComicNarrativeManager } from "../managers/ComicNarrativeManager.js";
+import { CinematicDirector } from "../managers/CinematicDirector.js";
 
 /**
  * ESCENA 2: El Barro, la Lanza y la Caída
  * Parte 1: El Precio de la Gloria — The Last Spartan
  *
  * - Hito 2.1: El Choque contra Argos (Estado 2: Combate Lanza Dory + Escudo Hoplón).
- * - Hito 2.2: La Herida y la Muerte del Ídolo (Cinemática híbrida 2D + Primera Persona 3D).
+ * - Hito 2.2: La Herida y la Muerte del Ídolo (cinemática de planos sobre la ilustración).
  * - Hito 2.3: La Huida Deshonrosa (Estado 3: Huida herido hacia la izquierda bajo salvas de flechas).
+ *
+ * Las ilustraciones de hito se intercalan con el combate: apertura a pantalla
+ * completa, viñeta insertada al primer combate, corte de emboscada, secuencia
+ * de planos en la muerte del General y huida bajo lluvia de flechas.
  */
 export class Escena2Scene extends Phaser.Scene {
   constructor() {
@@ -31,6 +37,7 @@ export class Escena2Scene extends Phaser.Scene {
 
     this.audio = new AudioManager(this);
     this.narrative = new ComicNarrativeManager(this, this.audio);
+    this.cinematic = new CinematicDirector(this, this.audio);
 
     this.phaseState = {
       currentMilestone: "2.1",
@@ -90,9 +97,47 @@ export class Escena2Scene extends Phaser.Scene {
       this.startHito2_3FleeDirectly();
     } else {
       this.audio.playBattleRainAmbient();
-      this.showChapterBanner();
-      this.showCombatTutorialCard();
+      this.playIntroCinematic();
     }
+  }
+
+  // ==========================================================================
+  // APERTURA CINEMATOGRÁFICA DEL HITO 2.1
+  // ==========================================================================
+
+  async playIntroCinematic() {
+    this.phaseState.inCinematic = true;
+    this.player.setControlEnabled(false);
+
+    this.showChapterBanner();
+    await this.waitMs(1700);
+
+    if (this.chapterBanner?.active) {
+      const banner = this.chapterBanner;
+      this.chapterBanner = null;
+      this.tweens.killTweensOf(banner);
+      this.tweens.add({
+        targets: banner,
+        alpha: 0,
+        duration: 240,
+        onComplete: () => banner.destroy()
+      });
+    }
+
+    await this.cinematic.playFullscreen("hito2_1", "clash", {
+      hold: 3600,
+      atmosphere: "rain",
+      caption: "El desfiladero de Argos. La lluvia no distingue bandos.",
+      zoomFrom: 1.02,
+      zoomTo: 1.12,
+      panToX: 0.03
+    });
+
+    if (!this.sys.isActive()) return;
+
+    this.phaseState.inCinematic = false;
+    this.player.setControlEnabled(true);
+    this.showCombatTutorialCard();
   }
 
   // ==========================================================================
@@ -262,6 +307,7 @@ export class Escena2Scene extends Phaser.Scene {
 
   showChapterBanner() {
     const banner = this.add.container(WIDTH / 2, 114).setScrollFactor(0).setDepth(150).setAlpha(0);
+    this.chapterBanner = banner;
     const bg = this.add.graphics();
     bg.fillStyle(0x111318, 0.88).fillRoundedRect(-270, -34, 540, 68, 6);
     bg.lineStyle(2, SPARTA_COLORS.bronze, 0.9).strokeRoundedRect(-270, -34, 540, 68, 6);
@@ -288,7 +334,10 @@ export class Escena2Scene extends Phaser.Scene {
       duration: 500,
       hold: 2300,
       yoyo: true,
-      onComplete: () => banner.destroy()
+      onComplete: () => {
+        if (banner.active) banner.destroy();
+        if (this.chapterBanner === banner) this.chapterBanner = null;
+      }
     });
   }
 
@@ -404,13 +453,24 @@ export class Escena2Scene extends Phaser.Scene {
       this.enemyManager.setAggressiveMode(true);
       this.audio.playDissonantBattleShift();
 
+      // Corte seco de emboscada: la ilustración irrumpe sobre el combate
+      this.cinematic.playFlash("hito2_1", "wide", {
+        hold: 1250,
+        atmosphere: "rain",
+        zoomFrom: 1.0,
+        zoomTo: 1.1,
+        fadeIn: 100,
+        fadeOut: 240
+      });
+
       this.narrative.showVignette({
         corner: "top-right",
         variant: "thought",
         speaker: "Soldado",
-        portraitKey: "portrait_soldier_thought",
+        portraitKey: CINEMATIC_PORTRAITS.soldierThought,
         text: "Son demasiados... la falange se rompió. No era una patrulla... ¡nos tendieron una trampa!",
-        autoDismissDelay: 4600
+        autoDismissDelay: 4600,
+        depth: 200
       });
     }
 
@@ -434,6 +494,16 @@ export class Escena2Scene extends Phaser.Scene {
         "¡Por Esparta! ¡Miren cómo caen!",
         { duration: 3600, offsetY: 78 }
       );
+
+      // Viñeta ilustrada sobre el cielo del desfiladero, sin tapar el combate
+      this.cinematic.showInset("hito2_1", "impact", {
+        width: 400,
+        x: WIDTH / 2,
+        y: 152,
+        hold: 4600,
+        slideFrom: 80,
+        slideAxis: "y"
+      });
     }
   }
 
@@ -499,111 +569,56 @@ export class Escena2Scene extends Phaser.Scene {
     frontArgos.destroy();
     backLancer.destroy();
 
-    // 2. TRANSICIÓN A PLANO 3D (PRIMERA PERSONA AL RAS DEL SUELO)
-    await this.playFirstPersonGeneralDeath3D();
+    // 2. LA MUERTE DEL ÍDOLO: la ilustración toma el relevo del plano 2D
+    await this.playIdolDeathCinematic();
 
     // Limpiar el escudo tirado del Hito 2.2 y pasar al Hito 2.3
     droppedShield.destroy();
     this.startHito2_3FleeSequence();
   }
 
-  async playFirstPersonGeneralDeath3D() {
-    const fpContainer = this.add.container(0, 0).setScrollFactor(0).setDepth(145).setAlpha(0);
+  /**
+   * La vista se nubla y el mundo 2D cede el paso a la ilustración del Hito 2.2,
+   * encadenada en cuatro planos: general → mano → impacto → derrumbe.
+   */
+  async playIdolDeathCinematic() {
+    await this.cinematic.playShotSequence("hito2_2", [
+      {
+        shot: "wide",
+        hold: 2000,
+        caption: "El General se abrió paso entre el humo, derribando a dos argivos."
+      },
+      {
+        shot: "hand",
+        hold: 1700,
+        caption: "Su mano ensangrentada se tendió hacia la mía."
+      },
+      {
+        shot: "impact",
+        hold: 1500,
+        caption: "La punta de una lanza argiva lo atravesó por la espalda.",
+        effect: "impact"
+      },
+      {
+        shot: "collapse",
+        hold: 2200,
+        caption: "El hombre más fuerte de Esparta cayó de rodillas frente a mi rostro.",
+        blur: 1.0
+      }
+    ], { atmosphere: "rain" });
 
-    // Fondo borroso al ras del suelo con perspectiva convergente
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(0x161b22, 0x161b22, 0x3b2c22, 0x3b2c22, 1);
-    bg.fillRect(0, 0, WIDTH, HEIGHT);
-
-    // Suelo en perspectiva 3D convergiendo hacia el centro del horizonte
-    bg.fillStyle(0x2d2219, 1);
-    bg.fillTriangle(WIDTH / 2, HEIGHT * 0.44, -180, HEIGHT, WIDTH + 180, HEIGHT);
-    bg.lineStyle(2, 0x1a130e, 0.5);
-    bg.strokeLineShape(new Phaser.Geom.Line(WIDTH / 2, HEIGHT * 0.44, 120, HEIGHT));
-    bg.strokeLineShape(new Phaser.Geom.Line(WIDTH / 2, HEIGHT * 0.44, WIDTH - 120, HEIGHT));
-
-    // Neblina y humo del campo de batalla
-    const smoke1 = this.add.ellipse(WIDTH * 0.3, HEIGHT * 0.48, 420, 140, 0x64748b, 0.28);
-    const smoke2 = this.add.ellipse(WIDTH * 0.7, HEIGHT * 0.46, 460, 160, 0x475569, 0.3);
-
-    // Siluetas argivas que el General derriba a su paso
-    const foeLeft = this.add.image(WIDTH * 0.44, HEIGHT * 0.56, "argos_soldier").setScale(0.7).setAlpha(0.85);
-    const foeRight = this.add.image(WIDTH * 0.57, HEIGHT * 0.56, "argos_lancer").setScale(0.7).setAlpha(0.85);
-
-    // El General emergiendo entre el humo hacia la cámara
-    const fpGeneral = this.add.image(WIDTH * 0.5, HEIGHT * 0.48, "fp_general_approach").setScale(0.32);
-
-    // Mano propia del Soldado herido intentando alcanzarlo desde abajo
-    const playerHand = this.add.image(WIDTH * 0.34, HEIGHT + 30, "fp_player_hand")
-      .setScale(1.15)
-      .setRotation(0.32);
-
-    fpContainer.add([bg, smoke1, smoke2, foeLeft, foeRight, fpGeneral, playerHand]);
-
-    // Fundido de entrada al plano en primera persona
-    await this.tweenPromise(fpContainer, { alpha: 1, duration: 550 });
-
-    // El General derriba a los dos enemigos argivos y avanza hacia primer plano 3D
-    this.tweens.add({ targets: smoke1, x: smoke1.x - 160, alpha: 0.12, duration: 2200 });
-    this.tweens.add({ targets: smoke2, x: smoke2.x + 160, alpha: 0.12, duration: 2200 });
-
-    this.time.delayedCall(350, () => {
-      this.audio.playShieldBash();
-      this.tweens.add({ targets: foeLeft, x: -120, angle: -45, alpha: 0, duration: 480 });
-      this.tweens.add({ targets: foeRight, x: WIDTH + 120, angle: 45, alpha: 0, duration: 480 });
-    });
-
-    this.tweens.add({
-      targets: playerHand,
-      y: HEIGHT - 76,
-      x: WIDTH * 0.4,
-      duration: 1700,
-      ease: "Sine.easeOut"
-    });
-
-    await this.tweenPromise(fpGeneral, {
-      scale: 1.24,
-      y: HEIGHT * 0.56,
-      duration: 1850,
-      ease: "Cubic.easeOut"
-    });
-
-    await this.waitMs(350);
-
-    // EL IMPACTO: La punta de una lanza argiva atraviesa brutalmente su pecho desde atrás
-    fpGeneral.setTexture("fp_general_impaled");
-    this.audio.playGeneralImpale();
-    this.cameras.main.shake(320, 0.015);
-    this.enemyManager.spawnParticles(WIDTH * 0.5, HEIGHT * 0.54, "blood_splat", 18);
-
-    // La mano del Soldado cae por el impacto emocional
-    this.tweens.add({ targets: playerHand, y: HEIGHT + 40, duration: 550, ease: "Quad.easeIn" });
-
-    await this.waitMs(700);
-
-    // El General cae de rodillas frente al rostro del Soldado y se desploma en el barro
-    fpGeneral.setTexture("fp_general_kneeling");
-    await this.tweenPromise(fpGeneral, { y: HEIGHT * 0.65, scale: 1.28, duration: 600, ease: "Quad.easeIn" });
-
-    await this.waitMs(450);
-
-    fpGeneral.setTexture("fp_general_dead");
-    this.audio.playMessengerFall();
-    this.cameras.main.shake(150, 0.006);
-    await this.tweenPromise(fpGeneral, { y: HEIGHT * 0.78, duration: 350, ease: "Bounce.easeOut" });
+    if (!this.sys.isActive()) return;
 
     // Viñeta de Cómic: Ojos abiertos del Soldado en estado de shock
     await this.narrative.showVignette({
       corner: "top-left",
       variant: "dramatic",
       speaker: "Soldado (En shock)",
-      portraitKey: "portrait_soldier_shock",
+      portraitKey: CINEMATIC_PORTRAITS.soldierShock,
       text: "Si el hombre más fuerte de Esparta cayó como un mortal... ¿qué esperanza queda aquí?",
-      autoDismissDelay: 4600
+      autoDismissDelay: 4600,
+      depth: 200
     });
-
-    await this.tweenPromise(fpContainer, { alpha: 0, duration: 650 });
-    fpContainer.destroy();
   }
 
   // ==========================================================================
@@ -612,7 +627,7 @@ export class Escena2Scene extends Phaser.Scene {
 
   startHito2_3FleeSequence() {
     this.phaseState.currentMilestone = "2.3";
-    this.phaseState.inCinematic = false;
+    this.phaseState.inCinematic = true;
     this.phaseState.fleeActive = true;
 
     // Reubicar al Soldado herido sin escudo mirando hacia la izquierda
@@ -620,7 +635,7 @@ export class Escena2Scene extends Phaser.Scene {
     this.player.setGameplayState(SPARTAN_STATES.WOUNDED_FLEE);
     this.player.health = 80;
     this.player.faceDirection(-1);
-    this.player.setControlEnabled(true);
+    this.player.setControlEnabled(false);
 
     // Mostrar cadáver del General atrás como recordatorio visual en el 2D
     this.add.image(GORGE_LAYOUT.triggers.ambushCinematicX + 45, GROUND_Y - 12, "fallen_spartan_body")
@@ -638,7 +653,24 @@ export class Escena2Scene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     this.audio.playHeartbeatAndBreath(950);
 
-    // Comenzar salvas periódicas de flechas de Argos desde el cielo
+    // La huida arranca con la ilustración del hito bajo lluvia de flechas
+    this.playFleeCinematic();
+  }
+
+  async playFleeCinematic() {
+    await this.cinematic.playFullscreen("hito2_3", "flight", {
+      hold: 3000,
+      atmosphere: "rain",
+      caption: "El campo está perdido. Solo queda el camino de vuelta.",
+      zoomFrom: 1.02,
+      zoomTo: 1.1,
+      panToX: -0.04
+    });
+
+    if (!this.sys.isActive()) return;
+
+    this.phaseState.inCinematic = false;
+    this.player.setControlEnabled(true);
     this.startArrowBarrage();
   }
 
@@ -749,18 +781,27 @@ export class Escena2Scene extends Phaser.Scene {
     }
   }
 
-  finishEscena2() {
+  async finishEscena2() {
     this.phaseState.fleeActive = false;
     this.phaseState.sceneCompleted = true;
     this.stopArrowBarrage();
     this.player.setControlEnabled(false);
 
-    // Gritos de victoria del ejército de Argos a lo lejos y fundido a negro
+    // Gritos de victoria del ejército de Argos a lo lejos
     this.audio.fadeAmbient(900);
     this.audio.playArgosVictoryCries();
 
-    this.cameras.main.fadeOut(2200, 0, 0, 0);
-    this.time.delayedCall(2300, () => {
+    // Cierre ilustrado: el soldado cruza el límite del desfiladero
+    await this.cinematic.playFullscreen("hito2_3", "wide", {
+      hold: 2400,
+      atmosphere: "rain",
+      caption: "Cruzó el límite del desfiladero. Detrás, Argos celebraba."
+    });
+
+    if (!this.sys.isActive()) return;
+
+    this.cameras.main.fadeOut(2000, 0, 0, 0);
+    this.time.delayedCall(2100, () => {
       this.audio.stopAmbient();
       this.scene.start("Escena3Scene");
     });
