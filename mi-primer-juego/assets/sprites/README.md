@@ -59,7 +59,7 @@ Cada ciclo deriva de **una sola postura base** con desplazamientos laterales y u
 | `spartan_desperate_sprint_sheet.png` | `spartan_desperate_sprint_sheet` | 66 x 76 px (3 frames) | `spartan_desperate_sprint_cycle` — carrera desesperada (Estado 4) |
 
 ### Frames fuente del pack (32 x 32)
-Archivos originales renombrados para identificar cada pose de un vistazo. No se cargan en el juego; sirven para regenerar skins.
+Archivos originales renombrados para identificar cada pose de un vistazo. No se cargan en el juego ni se publican: viven en **`art-source/sprites-frames/`** (fuera de la carpeta que se despliega) y sirven para regenerar skins.
 
 | Archivo | Pose |
 | :--- | :--- |

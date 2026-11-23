@@ -1,11 +1,13 @@
 """
 Prepara los recursos cinematográficos de The Last Spartan.
 
-Toma las ilustraciones originales de `mi-primer-juego/assets/` y genera copias
-optimizadas para el runtime en `mi-primer-juego/assets/cine/`:
+Toma las ilustraciones originales de `art-source/` (fuera de la carpeta que se
+publica) y genera copias optimizadas para el runtime en
+`mi-primer-juego/assets/cine/`:
 
   * Plates cinematográficos (ilustraciones de hito) a 1920 px de ancho.
   * Retratos cuadrados de personaje (recorte de rostro + grado de color) a 512 px.
+  * Hojas de sprites de los GIF animados (Phaser no reproduce GIF en canvas).
 
 Los originales nunca se modifican: siguen siendo la fuente de verdad.
 
@@ -13,6 +15,7 @@ Uso:
     python tools/prepare_cinematics.py
     python tools/prepare_cinematics.py --only plates
     python tools/prepare_cinematics.py --only portraits
+    python tools/prepare_cinematics.py --only gifs
 """
 
 import argparse
@@ -21,8 +24,8 @@ import os
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ASSETS = os.path.join(ROOT, "mi-primer-juego", "assets")
-OUT_DIR = os.path.join(ASSETS, "cine")
+ART_SOURCE = os.path.join(ROOT, "art-source")
+OUT_DIR = os.path.join(ROOT, "mi-primer-juego", "assets", "cine")
 
 PLATE_WIDTH = 1920
 PLATE_QUALITY = 82
@@ -106,7 +109,7 @@ def ensure_out_dir():
 
 def build_plates():
     for relative_path, key in PLATES:
-        source = os.path.join(ASSETS, relative_path)
+        source = os.path.join(ART_SOURCE, relative_path)
         if not os.path.exists(source):
             print(f"  ! falta {relative_path}")
             continue
@@ -124,7 +127,7 @@ def build_plates():
 
 def build_portraits():
     for relative_path, key, cx, cy, side, grade in PORTRAITS:
-        source = os.path.join(ASSETS, relative_path)
+        source = os.path.join(ART_SOURCE, relative_path)
         if not os.path.exists(source):
             print(f"  ! falta {relative_path}")
             continue
@@ -150,7 +153,7 @@ def build_portraits():
 
 def build_gif_sheets():
     for relative_path, key, frame_width, frame_height, cols, rows in GIF_SHEETS:
-        source = os.path.join(ASSETS, relative_path)
+        source = os.path.join(ART_SOURCE, relative_path)
         if not os.path.exists(source):
             print(f"  ! falta {relative_path}")
             continue
