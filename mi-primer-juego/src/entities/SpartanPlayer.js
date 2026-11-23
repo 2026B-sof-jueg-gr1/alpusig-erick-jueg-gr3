@@ -49,6 +49,8 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     this.attackCooldownUntil = 0;
     this.poseUntil = 0;
     this.currentPoseTexture = null;
+    this.isMoving = false;
+    this.visualSignature = null;
 
     this.setGameplayState(initialState);
   }
@@ -72,13 +74,13 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
       this.hasShield = true;
       this.hasSpear = true;
     }
-    this.applyStateVisuals();
+    this.syncVisuals();
   }
 
   equipGear() {
     this.hasSpear = true;
     this.hasShield = true;
-    this.applyStateVisuals();
+    this.syncVisuals();
 
     this.scene.tweens.add({
       targets: this,
@@ -90,16 +92,66 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  /**
+   * Recalcula textura, hitbox y animación solo cuando cambia la combinación visual.
+   * Así se evita reiniciar la animación en cada frame sin alterar las mecánicas.
+   */
+  syncVisuals() {
+    const signature = [
+      this.gameplayState,
+      this.hasSpear,
+      this.hasShield,
+      this.isGuarding,
+      this.isDucked,
+      this.currentPoseTexture || "",
+      this.isMoving ? "move" : "idle"
+    ].join("|");
+
+    if (signature === this.visualSignature) return;
+    this.visualSignature = signature;
+    this.applyStateVisuals();
+  }
+
+  getLocomotionAnimation() {
+    if (!this.isMoving || this.currentPoseTexture || this.isDashing || this.isChargingHeavy) return null;
+
+    if (this.gameplayState === SPARTAN_STATES.DESPERATE_SPRINT) {
+      return { key: "spartan_desperate_sprint_cycle", body: [34, 70, 12, 4] };
+    }
+
+    if (this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE && !this.isDucked) {
+      return { key: "spartan_wounded_limp_cycle", body: [34, 70, 12, 4] };
+    }
+
+    const armed = this.hasSpear && this.hasShield && !this.isGuarding;
+    const armedState =
+      this.gameplayState === SPARTAN_STATES.ACTIVE_COMBAT || this.gameplayState === SPARTAN_STATES.PEACEFUL_GUARD;
+
+    if (armed && armedState) {
+      return { key: "spartan_armed_walk_cycle", body: [34, 74, 16, 6] };
+    }
+
+    return null;
+  }
+
   applyStateVisuals() {
+    const locomotion = this.getLocomotionAnimation();
+    if (locomotion) {
+      const [width, height, offsetX, offsetY] = locomotion.body;
+      this.body.setSize(width, height).setOffset(offsetX, offsetY);
+      this.play(locomotion.key, true);
+      return;
+    }
+
+    this.stop();
+
     if (this.gameplayState === SPARTAN_STATES.DESPERATE_SPRINT) {
       this.setTexture("spartan_desperate_sprint");
       this.body.setSize(34, 70).setOffset(12, 4);
       return;
     }
 
-    if (
-      this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE
-    ) {
+    if (this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE) {
       if (this.isDucked) {
         this.setTexture("spartan_wounded_duck");
         this.body.setSize(34, 48).setOffset(12, 6);
@@ -134,8 +186,9 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
       this.isChargingHeavy = false;
       this.isDashing = false;
       this.isDucked = false;
+      this.isMoving = false;
       this.currentPoseTexture = null;
-      this.applyStateVisuals();
+      this.syncVisuals();
     }
   }
 
@@ -325,7 +378,7 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
   showPose(textureKey, durationMs) {
     this.currentPoseTexture = textureKey;
     this.poseUntil = this.scene.time.now + durationMs;
-    this.applyStateVisuals();
+    this.syncVisuals();
   }
 
   // ==========================================================================
@@ -409,7 +462,7 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
 
     if (this.currentPoseTexture && time >= this.poseUntil) {
       this.currentPoseTexture = null;
-      this.applyStateVisuals();
+      this.syncVisuals();
     }
 
     if (this.isDashing) {
@@ -429,13 +482,14 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
     const right = cursors.right.isDown || keys.D?.isDown;
     const down = cursors.down.isDown || keys.S?.isDown;
     const moveDir = (right ? 1 : 0) - (left ? 1 : 0);
+    this.isMoving = moveDir !== 0;
 
     // Estado 3: Agacharse ante flechas o esquivar con Espacio
     if (this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE) {
       const nextDuck = Boolean(down);
       if (nextDuck !== this.isDucked) {
         this.isDucked = nextDuck;
-        this.applyStateVisuals();
+        this.syncVisuals();
       }
       if (cursors.space && Phaser.Input.Keyboard.JustDown(cursors.space)) {
         this.performWoundedDodge(time, moveDir);
@@ -453,7 +507,7 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
 
     if (wantsGuard !== this.isGuarding) {
       this.isGuarding = wantsGuard;
-      this.applyStateVisuals();
+      this.syncVisuals();
     }
 
     const speed = this.getMovementSpeed();
@@ -470,6 +524,8 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityX(0);
       this.setAngle(0);
     }
+
+    this.syncVisuals();
 
     // Estado 1: postura marcial visual sin daño
     if (
@@ -498,12 +554,12 @@ export class SpartanPlayer extends Phaser.Physics.Arcade.Sprite {
   applyWalkCadence(delta, speed) {
     this.walkPhase += (delta / 1000) * (speed / 24);
     if (this.gameplayState === SPARTAN_STATES.DESPERATE_SPRINT) {
-      // Carrera pesada y errática impulsada por el pánico a pesar de la herida
-      const wobble = Math.sin(this.walkPhase * 1.45) * 6.5 + Math.cos(this.walkPhase * 3.1) * 2.4;
-      this.setAngle(this.facing * -5 + wobble);
+      // La spritesheet aporta el ciclo de piernas; el ángulo solo añade peso y fatiga.
+      const wobble = Math.sin(this.walkPhase * 1.45) * 3.4 + Math.cos(this.walkPhase * 3.1) * 1.2;
+      this.setAngle(this.facing * -3 + wobble);
       return;
     }
-    const tiltAmplitude = this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE ? 5.2 : 1.8;
+    const tiltAmplitude = this.gameplayState === SPARTAN_STATES.WOUNDED_FLEE ? 2.6 : 0.9;
     this.setAngle(Math.sin(this.walkPhase) * tiltAmplitude);
   }
 }

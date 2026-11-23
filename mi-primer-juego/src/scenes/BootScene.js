@@ -1,10 +1,11 @@
 import { TextureGenerator } from "../utils/TextureGenerator.js";
 import { CUSTOM_TEXTURES } from "../config/assetsConfig.js";
+import { PLAYER_ANIMATIONS } from "../config/playerAnimations.js";
 
 /**
  * Escena inicial de arranque.
- * Carga imágenes externas personalizadas en preload() (si las hay)
- * y genera proceduralmente cualquier textura restante en create().
+ * Carga imágenes y spritesheets personalizados en preload() y registra las
+ * animaciones del jugador antes de generar proceduralmente el resto de texturas.
  */
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -12,22 +13,46 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // 1. Cargar skins o texturas personalizadas colocadas en assets/sprites/
-    if (Array.isArray(CUSTOM_TEXTURES)) {
-      CUSTOM_TEXTURES.forEach((item) => {
-        if (item.key && item.path) {
-          this.load.image(item.key, item.path);
-        }
-      });
-    }
+    if (!Array.isArray(CUSTOM_TEXTURES)) return;
+
+    CUSTOM_TEXTURES.forEach((item) => {
+      if (!item.key || !item.path) return;
+
+      if (item.frameWidth && item.frameHeight) {
+        this.load.spritesheet(item.key, item.path, {
+          frameWidth: item.frameWidth,
+          frameHeight: item.frameHeight
+        });
+        return;
+      }
+
+      this.load.image(item.key, item.path);
+    });
   }
 
   create() {
-    // 2. Generar proceduralmente cualquier textura que no se haya cargado desde archivo
     TextureGenerator.generateAll(this);
-    
-    // 3. Remover el cartel de carga del HTML y arrancar el juego
+    this.registerPlayerAnimations();
+
     document.getElementById("loading")?.remove();
     this.scene.start("MenuScene");
+  }
+
+  registerPlayerAnimations() {
+    PLAYER_ANIMATIONS.forEach((definition) => {
+      if (this.anims.exists(definition.key)) return;
+
+      const frames = Array.from({ length: definition.frameCount }, (_, index) => {
+        const duration = definition.frameDurations?.[index];
+        return duration ? { key: definition.texture, frame: index, duration } : { key: definition.texture, frame: index };
+      });
+
+      this.anims.create({
+        key: definition.key,
+        frames,
+        frameRate: definition.frameRate,
+        repeat: definition.repeat
+      });
+    });
   }
 }

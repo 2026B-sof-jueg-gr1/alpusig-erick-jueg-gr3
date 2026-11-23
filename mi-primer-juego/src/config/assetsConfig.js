@@ -8,12 +8,19 @@
  */
 export const CUSTOM_TEXTURES = [
   // Personajes Parte 1: El Precio de la Gloria (Esparta y Argos)
-  // { key: "spartan_unarmed", path: "assets/sprites/spartan_unarmed.png" },
-  // { key: "spartan_armed", path: "assets/sprites/spartan_armed.png" },
-  // { key: "spartan_armed_guard", path: "assets/sprites/spartan_armed_guard.png" },
-  // { key: "spartan_armed_thrust", path: "assets/sprites/spartan_armed_thrust.png" },
-  // { key: "spartan_wounded", path: "assets/sprites/spartan_wounded.png" },
-  // { key: "spartan_wounded_duck", path: "assets/sprites/spartan_wounded_duck.png" },
+  // spartan_unarmed permanece procedural: el pack de sprites no incluye al soldado sin equipo.
+  { key: "spartan_armed", path: "assets/sprites/spartan_armed.png" },
+  { key: "spartan_armed_guard", path: "assets/sprites/spartan_armed_guard.png" },
+  { key: "spartan_armed_thrust", path: "assets/sprites/spartan_armed_thrust.png" },
+  { key: "spartan_wounded", path: "assets/sprites/spartan_wounded.png" },
+  { key: "spartan_wounded_duck", path: "assets/sprites/spartan_wounded_duck.png" },
+  { key: "spartan_kneeling_wounded", path: "assets/sprites/spartan_kneeling_wounded.png" },
+  { key: "spartan_desperate_sprint", path: "assets/sprites/spartan_desperate_sprint.png" },
+
+  // Spritesheets de locomoción (misma medida de frame que las texturas estáticas)
+  { key: "spartan_armed_walk_sheet", path: "assets/sprites/spartan_armed_walk_sheet.png", frameWidth: 68, frameHeight: 82 },
+  { key: "spartan_wounded_limp_sheet", path: "assets/sprites/spartan_wounded_limp_sheet.png", frameWidth: 60, frameHeight: 76 },
+  { key: "spartan_desperate_sprint_sheet", path: "assets/sprites/spartan_desperate_sprint_sheet.png", frameWidth: 66, frameHeight: 76 },
   // { key: "argos_soldier", path: "assets/sprites/argos_soldier.png" },
   // { key: "argos_shield_bearer", path: "assets/sprites/argos_shield_bearer.png" },
   // { key: "argos_lancer", path: "assets/sprites/argos_lancer.png" },
