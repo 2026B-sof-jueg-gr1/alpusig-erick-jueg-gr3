@@ -195,6 +195,50 @@ export class AudioManager {
     osc.stop(ctx.currentTime + 0.09);
   }
 
+  /** Riser suave al abrir una cinemática ilustrada */
+  playCinematicRiser() {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(170, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.95);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.04, ctx.currentTime + 0.55);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.05);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 1.1);
+  }
+
+  /** Deslizamiento de papel al entrar una viñeta ilustrada */
+  playPanelSlide(step = 0) {
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const buffer = this.createNoiseBuffer(ctx, 0.2);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(1500 + step * 220, ctx.currentTime);
+    filter.Q.value = 0.9;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.055, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.17);
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    source.start();
+    source.stop(ctx.currentTime + 0.2);
+  }
+
   /** Cascos de caballo del explorador irrumpiendo en la plaza */
   playHorseGallop(beats = 6) {
     const ctx = this.ensureContext();

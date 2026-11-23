@@ -17,6 +17,18 @@ npm install
 
 > **Nota:** El script de `postinstall` copia automáticamente la librería compilada de Phaser desde `node_modules` hacia `mi-primer-juego/lib/phaser.min.js`.
 
+## Recursos cinematográficos
+
+Las ilustraciones de hito de `mi-primer-juego/assets/` son la fuente de arte. El runtime consume copias optimizadas en `mi-primer-juego/assets/cine/` (plates de 1920 px y retratos HD de 512 px). Para regenerarlas tras cambiar o añadir ilustraciones:
+
+```bash
+python tools/prepare_cinematics.py            # plates + retratos
+python tools/prepare_cinematics.py --only plates
+python tools/prepare_cinematics.py --only portraits
+```
+
+Los encuadres de cada ilustración (qué zona se muestra, cuánto zoom y qué desplazamiento) se declaran en `mi-primer-juego/src/config/cinematicConfig.js`.
+
 ## Ejecutar localmente
 
 Puedes levantar el servidor de desarrollo de cualquiera de las siguientes formas:

@@ -20,8 +20,32 @@ export class TextureGenerator {
     this.generateSpartanEnvironment(scene);
     this.generateComicPortraits(scene);
     this.generateParticles(scene);
+    this.generateCinematicTextures(scene);
     this.generateEscena2Textures(scene);
     this.generateEscena3Textures(scene);
+  }
+
+  // --------------------------------------------------------------------------
+  // TEXTURAS DE LA CAPA CINEMATOGRÁFICA
+  // --------------------------------------------------------------------------
+  static generateCinematicTextures(scene) {
+    if (scene.textures.exists("cine_grain")) return;
+
+    const size = 128;
+    const canvasTexture = scene.textures.createCanvas("cine_grain", size, size);
+    if (!canvasTexture) return;
+
+    const context = canvasTexture.getContext();
+    const imageData = context.createImageData(size, size);
+    for (let index = 0; index < imageData.data.length; index += 4) {
+      const value = 110 + Math.floor(Math.random() * 145);
+      imageData.data[index] = value;
+      imageData.data[index + 1] = value;
+      imageData.data[index + 2] = value;
+      imageData.data[index + 3] = 255;
+    }
+    context.putImageData(imageData, 0, 0);
+    canvasTexture.refresh();
   }
 
   // --------------------------------------------------------------------------

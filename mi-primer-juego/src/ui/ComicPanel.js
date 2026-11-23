@@ -26,6 +26,7 @@ export class ComicPanel {
       variant: options.variant ?? "dialogue", // "dialogue" | "thought" | "dramatic" | "sepia"
       shaky: options.shaky ?? false,
       autoDismissDelay: options.autoDismissDelay ?? 0,
+      depth: options.depth ?? 140,
       ...options
     };
 
@@ -36,7 +37,7 @@ export class ComicPanel {
       : posFactory(width, height);
 
     this.container = scene.add.container(pos.x, pos.y)
-      .setDepth(140)
+      .setDepth(this.options.depth)
       .setAlpha(0)
       .setScrollFactor(0);
 

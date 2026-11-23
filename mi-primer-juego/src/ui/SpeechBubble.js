@@ -13,12 +13,13 @@ export class SpeechBubble {
       maxWidth: options.maxWidth ?? 300,
       duration: options.duration ?? 4500,
       speakerColor: options.speakerColor ?? "#1a1412",
+      depth: options.depth ?? 130,
       ...options
     };
 
     this.isDestroyed = false;
     this.container = scene.add.container(target.x, target.y - this.options.offsetY)
-      .setDepth(130)
+      .setDepth(this.options.depth)
       .setAlpha(0)
       .setScale(0.88);
 

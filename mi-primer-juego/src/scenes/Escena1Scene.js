@@ -1,8 +1,10 @@
 import { WIDTH, HEIGHT, GROUND_Y, SPARTA_COLORS } from "../config/constants.js";
 import { VILLAGE_LAYOUT } from "../config/villageLayout.js";
+import { CINEMATIC_PORTRAITS } from "../config/cinematicConfig.js";
 import { SpartanPlayer, SPARTAN_STATES } from "../entities/SpartanPlayer.js";
 import { AudioManager } from "../managers/AudioManager.js";
 import { ComicNarrativeManager } from "../managers/ComicNarrativeManager.js";
+import { CinematicDirector } from "../managers/CinematicDirector.js";
 
 /**
  * ESCENA 1: El Escudo del Pueblo y el Llamado de la Sangre
@@ -11,6 +13,10 @@ import { ComicNarrativeManager } from "../managers/ComicNarrativeManager.js";
  * - Hito 1.1: La Paz Antes de la Tormenta (exploración en Estado 1, entrega de Dory y Hoplón).
  * - Hito 1.2: El Mensajero y el General (llegada del explorador a caballo y llamado a las armas).
  * - Hito 1.3: La Arrogancia del Soldado (confrontación con el General, última mirada al hogar y marcha).
+ *
+ * Mezcla de jugabilidad y animación: las ilustraciones de hito se proyectan como
+ * viñetas cinematográficas animadas (Ken Burns) que conviven con el recorrido
+ * —insertadas en la jugabilidad— o lo interrumpen en los momentos climáticos.
  */
 export class Escena1Scene extends Phaser.Scene {
   constructor() {
@@ -24,6 +30,7 @@ export class Escena1Scene extends Phaser.Scene {
 
     this.audio = new AudioManager(this);
     this.narrative = new ComicNarrativeManager(this, this.audio);
+    this.cinematic = new CinematicDirector(this, this.audio);
 
     this.milestoneState = {
       trigger1Done: false,
@@ -314,6 +321,7 @@ export class Escena1Scene extends Phaser.Scene {
 
   showChapterBanner() {
     const banner = this.add.container(WIDTH / 2, 118).setScrollFactor(0).setDepth(150).setAlpha(0);
+    this.chapterBanner = banner;
     const bg = this.add.graphics();
     bg.fillStyle(0x1a1412, 0.85).fillRoundedRect(-270, -34, 540, 68, 6);
     bg.lineStyle(2, SPARTA_COLORS.bronzeLight, 0.9).strokeRoundedRect(-270, -34, 540, 68, 6);
@@ -340,7 +348,10 @@ export class Escena1Scene extends Phaser.Scene {
       duration: 600,
       hold: 2600,
       yoyo: true,
-      onComplete: () => banner.destroy()
+      onComplete: () => {
+        if (banner.active) banner.destroy();
+        if (this.chapterBanner === banner) this.chapterBanner = null;
+      }
     });
   }
 
@@ -374,7 +385,11 @@ export class Escena1Scene extends Phaser.Scene {
     }
 
     // Hito 1.2 — Llegada a la Plaza de Armas: El Mensajero y el General
-    if (!this.milestoneState.hito1_2Started && px >= plazaSequenceX) {
+    if (
+      !this.milestoneState.hito1_2Started &&
+      !this.milestoneState.waitingGeneralInteract &&
+      px >= plazaSequenceX
+    ) {
       this.milestoneState.hito1_2Started = true;
       this.runHito1_2MessengerSequence();
     }
@@ -394,6 +409,19 @@ export class Escena1Scene extends Phaser.Scene {
   // ==========================================================================
 
   runFamilyHandoffTrigger() {
+    // El rótulo de capítulo cede su lugar a la narrativa
+    if (this.chapterBanner?.active) {
+      const banner = this.chapterBanner;
+      this.chapterBanner = null;
+      this.tweens.killTweensOf(banner);
+      this.tweens.add({
+        targets: banner,
+        alpha: 0,
+        duration: 260,
+        onComplete: () => banner.destroy()
+      });
+    }
+
     // 1. Animar la entrega física del Escudo Hoplón y toma de la Lanza Dory
     const handoffShield = this.add.image(this.wifeSprite.x - 16, GROUND_Y - 38, "hoplon_shield")
       .setDepth(21);
@@ -430,13 +458,23 @@ export class Escena1Scene extends Phaser.Scene {
       onComplete: () => handoffSpear.destroy()
     });
 
-    // 2. Viñeta de la Esposa + Bocadillo dinámico del Soldado sin pausar el movimiento
+    // 2. Viñeta ilustrada del hito: se inserta sobre la jugabilidad sin detenerla
+    this.cinematic.showInset("hito1_1", "handoff", {
+      width: 480,
+      align: "right",
+      margin: 22,
+      hold: 7600,
+      caption: "La paz antes de la tormenta",
+      slideFrom: 90
+    });
+
+    // 3. Viñeta de la Esposa + Bocadillo dinámico del Soldado sin pausar el movimiento
     this.narrative.playSequence([
       {
         type: "vignette",
         corner: "top-left",
         speaker: "Esposa",
-        portraitKey: "portrait_wife",
+        portraitKey: CINEMATIC_PORTRAITS.family,
         text: "Tu turno en la muralla termina al anochecer. Los niños quieren escuchar otra vez cómo entrenas con la falange.",
         autoDismissDelay: 3800,
         delayAfter: 150
@@ -452,11 +490,14 @@ export class Escena1Scene extends Phaser.Scene {
   }
 
   runPathThoughtTrigger() {
+    // La viñeta ilustrada del hito se retira para no competir con el pensamiento
+    this.cinematic.dismissInsets();
+
     this.narrative.showVignette({
       corner: "top-right",
       variant: "thought",
       speaker: "Soldado",
-      portraitKey: "portrait_soldier_thought",
+      portraitKey: CINEMATIC_PORTRAITS.soldierThought,
       text: "Un guardia de frontera... Mientras otros forjan leyendas con sus lanzas, mi única misión es mirar un horizonte vacío.",
       autoDismissDelay: 4600
     });
@@ -470,6 +511,7 @@ export class Escena1Scene extends Phaser.Scene {
     this.player.setControlEnabled(false);
     this.player.faceDirection(1);
     this.controlsHint.setVisible(false);
+    this.cinematic.dismissInsets();
 
     // Enfocar la cámara sobre la plaza de armas
     const cam = this.cameras.main;
@@ -547,6 +589,15 @@ export class Escena1Scene extends Phaser.Scene {
     this.generalSprite.setFlipX(false);
     this.audio.playWarHorn();
 
+    // Cinemática ilustrada: el reporte y el llamado a las armas en plano ancho
+    const cinematic = this.cinematic.playFullscreen("hito1_2", "arrival", {
+      hold: 5200,
+      letterboxDuration: 520,
+      caption: "Argos marcha sobre el valle. Esparta responde con una sola voz."
+    });
+
+    await cinematic;
+
     // Soldados aliados alzan sus lanzas en señal de guerra
     this.allyTroops.forEach((ally, idx) => {
       this.tweens.add({
@@ -564,7 +615,7 @@ export class Escena1Scene extends Phaser.Scene {
       corner: "top-left",
       variant: "dramatic",
       speaker: "General",
-      portraitKey: "portrait_general_fierce",
+      portraitKey: CINEMATIC_PORTRAITS.generalFierce,
       text: "¡Argos cree que Esparta duerme! ¡Marcharán por nuestras tierras y beberán su propia sangre antes del ocaso! ¡A las armas!",
       autoDismissDelay: 4600
     });
@@ -578,7 +629,6 @@ export class Escena1Scene extends Phaser.Scene {
     });
 
     this.milestoneState.waitingGeneralInteract = true;
-    this.milestoneState.hito1_2Started = false;
     this.player.setControlEnabled(true);
     this.interactPrompt
       .setPosition(VILLAGE_LAYOUT.plaza.generalX + 25, GROUND_Y - 122)
@@ -609,7 +659,7 @@ export class Escena1Scene extends Phaser.Scene {
       corner: "top-right",
       variant: "dramatic",
       speaker: "General",
-      portraitKey: "portrait_general_frown",
+      portraitKey: CINEMATIC_PORTRAITS.generalFrown,
       text: "Tu puesto está aquí, soldado. Alguien debe sostener el escudo sobre las mujeres y los niños.",
       autoDismissDelay: 4000
     });
@@ -620,7 +670,7 @@ export class Escena1Scene extends Phaser.Scene {
     await this.narrative.showVignette({
       corner: "top-left",
       speaker: "Soldado",
-      portraitKey: "portrait_soldier",
+      portraitKey: CINEMATIC_PORTRAITS.soldier,
       text: "¡Mi lanza se desperdicia cuidando piedras, mi General! ¡Tengo fuerza, tengo corazón! ¡Déjeme demostrar que soy digno de marchar a su sombra!",
       autoDismissDelay: 4800
     });
@@ -640,14 +690,38 @@ export class Escena1Scene extends Phaser.Scene {
       corner: "top-right",
       variant: "dramatic",
       speaker: "General",
-      portraitKey: "portrait_general_smirk",
+      portraitKey: CINEMATIC_PORTRAITS.generalSmirk,
       text: "El hambre de gloria es lo que hace a un verdadero espartano. Toma tu lanza. Que los viejos cuiden el fuego hoy.",
       autoDismissDelay: 4600
     });
 
     this.generalSprite.setPosition(originalGeneralX, GROUND_Y - 41);
 
-    // 4. Transición Final: Última mirada al hogar y marcha hacia la derecha
+    // 4. Página de cómic: los tres encuadres que sellan la escena
+    await this.cinematic.playStrip([
+      {
+        plate: "hito1_3",
+        shot: "general",
+        caption: "«Tu puesto está aquí, soldado.»"
+      },
+      {
+        plate: "hito1_3",
+        shot: "soldier",
+        caption: "«¡Tengo fuerza, tengo corazón!»"
+      },
+      {
+        plate: "hito1_3",
+        shot: "standoff",
+        caption: "«El hambre de gloria...»"
+      }
+    ], {
+      panelWidth: 300,
+      panelHeight: 384,
+      hold: 4200,
+      dimAlpha: 0.66
+    });
+
+    // 5. Transición Final: Última mirada al hogar y marcha hacia la derecha
     this.playClosingMarchSequence();
   }
 

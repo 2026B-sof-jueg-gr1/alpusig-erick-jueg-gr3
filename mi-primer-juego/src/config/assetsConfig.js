@@ -21,6 +21,22 @@ export const CUSTOM_TEXTURES = [
   { key: "spartan_armed_walk_sheet", path: "assets/sprites/spartan_armed_walk_sheet.png", frameWidth: 68, frameHeight: 82 },
   { key: "spartan_wounded_limp_sheet", path: "assets/sprites/spartan_wounded_limp_sheet.png", frameWidth: 60, frameHeight: 76 },
   { key: "spartan_desperate_sprint_sheet", path: "assets/sprites/spartan_desperate_sprint_sheet.png", frameWidth: 66, frameHeight: 76 },
+
+  // Capa cinematográfica de la Escena 1 (ilustraciones de hito optimizadas)
+  { key: "cine_hito1_1", path: "assets/cine/cine_hito1_1.webp" },
+  { key: "cine_hito1_2", path: "assets/cine/cine_hito1_2.webp" },
+  { key: "cine_hito1_3", path: "assets/cine/cine_hito1_3.webp" },
+
+  // Retratos HD para las viñetas de cómic de la Escena 1
+  { key: "hd_portrait_wife", path: "assets/cine/hd_portrait_wife.webp" },
+  { key: "hd_portrait_soldier", path: "assets/cine/hd_portrait_soldier.webp" },
+  { key: "hd_portrait_soldier_thought", path: "assets/cine/hd_portrait_soldier_thought.webp" },
+  { key: "hd_portrait_general_fierce", path: "assets/cine/hd_portrait_general_fierce.webp" },
+  { key: "hd_portrait_general_frown", path: "assets/cine/hd_portrait_general_frown.webp" },
+  { key: "hd_portrait_general_smirk", path: "assets/cine/hd_portrait_general_smirk.webp" },
+  { key: "hd_portrait_children", path: "assets/cine/hd_portrait_children.webp" },
+  { key: "hd_portrait_family", path: "assets/cine/hd_portrait_family.webp" },
+
   // { key: "argos_soldier", path: "assets/sprites/argos_soldier.png" },
   // { key: "argos_shield_bearer", path: "assets/sprites/argos_shield_bearer.png" },
   // { key: "argos_lancer", path: "assets/sprites/argos_lancer.png" },

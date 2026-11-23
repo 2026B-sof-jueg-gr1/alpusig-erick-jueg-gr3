@@ -1,0 +1,152 @@
+"""
+Prepara los recursos cinematográficos de The Last Spartan.
+
+Toma las ilustraciones originales de `mi-primer-juego/assets/` y genera copias
+optimizadas para el runtime en `mi-primer-juego/assets/cine/`:
+
+  * Plates cinematográficos (ilustraciones de hito) a 1920 px de ancho.
+  * Retratos cuadrados de personaje (recorte de rostro + grado de color) a 512 px.
+
+Los originales nunca se modifican: siguen siendo la fuente de verdad.
+
+Uso:
+    python tools/prepare_cinematics.py
+    python tools/prepare_cinematics.py --only plates
+    python tools/prepare_cinematics.py --only portraits
+"""
+
+import argparse
+import os
+
+from PIL import Image, ImageEnhance
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ASSETS = os.path.join(ROOT, "mi-primer-juego", "assets")
+OUT_DIR = os.path.join(ASSETS, "cine")
+
+PLATE_WIDTH = 1920
+PLATE_QUALITY = 82
+PORTRAIT_SIZE = 512
+PORTRAIT_QUALITY = 86
+
+# Ilustraciones de hito -> clave de textura de runtime
+PLATES = [
+    ("Escena 1 El Escudo del Pueblo y el Llamado de la Sangre/hito1_1.webp", "cine_hito1_1"),
+    ("Escena 1 El Escudo del Pueblo y el Llamado de la Sangre/hito1_2.webp", "cine_hito1_2"),
+    ("Escena 1 El Escudo del Pueblo y el Llamado de la Sangre/hito1_3.webp", "cine_hito1_3"),
+    ("Escena 2 El Barro, la Lanza y la Caída/Hito2_1.webp", "cine_hito2_1"),
+    ("Escena 2 El Barro, la Lanza y la Caída/Hito2_2.webp", "cine_hito2_2"),
+    ("Escena 2 El Barro, la Lanza y la Caída/Hito2_3.webp", "cine_hito2_3"),
+    ("Escena 3 Cenizas del Deber/Hito3_1.webp", "cine_hito3_1"),
+    ("Escena 3 Cenizas del Deber/Hito3_2.webp", "cine_hito3_2"),
+]
+
+# Retratos: (archivo, clave, centroX, centroY, lado de recorte, grado)
+# centroX / centroY son relativos (0..1) al tamaño de la imagen original.
+PORTRAITS = [
+    ("esposa/esposa.webp", "hd_portrait_wife", 0.52, 0.44, 1320, "warm"),
+    ("soldado/soldado.webp", "hd_portrait_soldier", 0.47, 0.21, 980, "resolve"),
+    ("soldado/soldado.webp", "hd_portrait_soldier_thought", 0.47, 0.21, 1120, "thought"),
+    ("general/general.webp", "hd_portrait_general_fierce", 0.50, 0.19, 900, "fierce"),
+    ("general/general.webp", "hd_portrait_general_frown", 0.50, 0.20, 1040, "frown"),
+    ("general/general.webp", "hd_portrait_general_smirk", 0.50, 0.21, 1180, "smirk"),
+    ("hijos/hijos.webp", "hd_portrait_children", 0.50, 0.44, 1400, "warm"),
+    ("familia/familia.webp", "hd_portrait_family", 0.50, 0.50, 1520, "warm"),
+]
+
+GRADES = {
+    "fierce": {"contrast": 1.14, "color": 1.12, "brightness": 1.0, "tint": None},
+    "frown": {"contrast": 1.08, "color": 0.82, "brightness": 0.86, "tint": (0x22, 0x33, 0x4d, 0.10)},
+    "smirk": {"contrast": 1.05, "color": 1.06, "brightness": 1.05, "tint": (0x8a, 0x4a, 0x1e, 0.07)},
+    "thought": {"contrast": 0.98, "color": 0.62, "brightness": 1.02, "tint": (0x33, 0x4a, 0x66, 0.12)},
+    "resolve": {"contrast": 1.07, "color": 1.04, "brightness": 1.01, "tint": None},
+    "warm": {"contrast": 1.02, "color": 1.03, "brightness": 1.02, "tint": (0x9a, 0x5a, 0x28, 0.05)},
+}
+
+
+def apply_grade(image, grade_name):
+    grade = GRADES.get(grade_name)
+    if not grade:
+        return image
+
+    result = ImageEnhance.Brightness(image).enhance(grade["brightness"])
+    result = ImageEnhance.Contrast(result).enhance(grade["contrast"])
+    result = ImageEnhance.Color(result).enhance(grade["color"])
+
+    if grade["tint"]:
+        r, g, b, alpha = grade["tint"]
+        layer = Image.new("RGB", result.size, (r, g, b))
+        result = Image.blend(result, layer, alpha)
+
+    return result
+
+
+def ensure_out_dir():
+    os.makedirs(OUT_DIR, exist_ok=True)
+
+
+def build_plates():
+    for relative_path, key in PLATES:
+        source = os.path.join(ASSETS, relative_path)
+        if not os.path.exists(source):
+            print(f"  ! falta {relative_path}")
+            continue
+
+        image = Image.open(source).convert("RGB")
+        width, height = image.size
+        target_height = round(height * (PLATE_WIDTH / width))
+        image = image.resize((PLATE_WIDTH, target_height), Image.LANCZOS)
+
+        destination = os.path.join(OUT_DIR, f"{key}.webp")
+        image.save(destination, "WEBP", quality=PLATE_QUALITY, method=6)
+        size_kb = os.path.getsize(destination) / 1024
+        print(f"  plate  {key:18s} {image.size[0]}x{image.size[1]}  {size_kb:6.0f} KB")
+
+
+def build_portraits():
+    for relative_path, key, cx, cy, side, grade in PORTRAITS:
+        source = os.path.join(ASSETS, relative_path)
+        if not os.path.exists(source):
+            print(f"  ! falta {relative_path}")
+            continue
+
+        image = Image.open(source).convert("RGB")
+        width, height = image.size
+        crop_side = min(side, width, height)
+
+        left = int(cx * width - crop_side / 2)
+        top = int(cy * height - crop_side / 2)
+        left = max(0, min(left, width - crop_side))
+        top = max(0, min(top, height - crop_side))
+
+        portrait = image.crop((left, top, left + crop_side, top + crop_side))
+        portrait = portrait.resize((PORTRAIT_SIZE, PORTRAIT_SIZE), Image.LANCZOS)
+        portrait = apply_grade(portrait, grade)
+
+        destination = os.path.join(OUT_DIR, f"{key}.webp")
+        portrait.save(destination, "WEBP", quality=PORTRAIT_QUALITY, method=6)
+        size_kb = os.path.getsize(destination) / 1024
+        print(f"  portrait {key:26s} {size_kb:6.0f} KB")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Genera los recursos cinematográficos optimizados.")
+    parser.add_argument("--only", choices=["plates", "portraits"], help="Genera solo un grupo de recursos.")
+    arguments = parser.parse_args()
+
+    ensure_out_dir()
+    print(f"Salida: {OUT_DIR}")
+
+    if arguments.only in (None, "plates"):
+        print("Plates cinematográficos:")
+        build_plates()
+
+    if arguments.only in (None, "portraits"):
+        print("Retratos HD:")
+        build_portraits()
+
+    print("Listo.")
+
+
+if __name__ == "__main__":
+    main()
