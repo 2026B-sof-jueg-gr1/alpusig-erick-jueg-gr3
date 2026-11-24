@@ -50,7 +50,7 @@ Al agregar el archivo y declararlo en `src/config/assetsConfig.js`, Phaser carga
 
 ### Spritesheets de locomoción del jugador
 Se cargan con `load.spritesheet` y se registran en `src/config/playerAnimations.js`.
-Cada ciclo deriva de **una sola postura base** con desplazamientos laterales y un pequeño salto vertical; así la lanza, el escudo y la cabeza nunca cambian de sitio entre frames. No se mezclan poses incompatibles (por ejemplo, `source_spartan_08_armed_advance.png` ya no se usa para caminar).
+La **caminata armada** usa ahora frames reales de 64×64: alterna `source_spartan_14_walk_stride_plant.png` y `source_spartan_16_run_stride_lift.png`, que comparten lanza horizontal, escudo al frente y torso idéntico, mientras las piernas alternan entre apoyo y elevación. Se descartaron las poses con lanza alzada (`13` y `15`) porque producían saltos de brazo. Los ciclos de herido y sprint siguen generados por desplazamiento suave desde una sola postura base.
 
 | Archivo | Clave (Key) | Frame | Animación resultante |
 | :--- | :--- | :--- | :--- |
@@ -75,6 +75,10 @@ Archivos originales renombrados para identificar cada pose de un vistazo. No se 
 | `source_spartan_10_thrust_spear.png` | Estocada horizontal con la lanza |
 | `source_spartan_11_crouch_spear.png` | Cuerpo bajo con lanza horizontal |
 | `source_spartan_12_kneel_bloody_shield.png` | De rodillas con escudo ensangrentado |
+| `source_spartan_13_walk_upright_spear_back.png` | Marcha erguida, lanza diagonal hacia atrás (64×64) |
+| `source_spartan_14_walk_stride_plant.png` | Paso con pie apoyado y lanza horizontal (64×64) |
+| `source_spartan_15_armed_spear_up.png` | Paso con lanza alzada hacia delante (64×64) |
+| `source_spartan_16_run_stride_lift.png` | Paso con pierna trasera elevada y lanza horizontal (65×65) |
 
 ---
 
