@@ -1,6 +1,7 @@
 import { WIDTH, HEIGHT } from "./constants.js";
 import { BootScene } from "../scenes/BootScene.js";
 import { MenuScene } from "../scenes/MenuScene.js";
+import { FinalMenuScene } from "../scenes/FinalMenuScene.js";
 import { Escena1Scene } from "../scenes/Escena1Scene.js";
 import { Escena2Scene } from "../scenes/Escena2Scene.js";
 import { Escena3Scene } from "../scenes/Escena3Scene.js";
@@ -34,5 +35,5 @@ export const gameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  scene: [BootScene, MenuScene, Escena1Scene, Escena2Scene, Escena3Scene, GameScene, PauseScene, GameOverScene, VictoryScene]
+  scene: [BootScene, MenuScene, Escena1Scene, Escena2Scene, Escena3Scene, FinalMenuScene, GameScene, PauseScene, GameOverScene, VictoryScene]
 };

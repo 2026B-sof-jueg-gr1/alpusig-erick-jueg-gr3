@@ -1,4 +1,5 @@
 import { WIDTH, HEIGHT, SPARTA_COLORS } from "../config/constants.js";
+import { readingTime } from "../config/narrativeTiming.js";
 
 const CORNER_POSITIONS = {
   "top-left": (w, h) => ({ x: w / 2 + 24, y: h / 2 + 24 }),
@@ -25,7 +26,7 @@ export class ComicPanel {
       portraitKey: options.portraitKey ?? null,
       variant: options.variant ?? "dialogue", // "dialogue" | "thought" | "dramatic" | "sepia"
       shaky: options.shaky ?? false,
-      autoDismissDelay: options.autoDismissDelay ?? 0,
+      autoDismissDelay: options.autoDismissDelay ?? readingTime(options.text ?? ""),
       depth: options.depth ?? 140,
       ...options
     };
@@ -169,6 +170,9 @@ export class ComicPanel {
   show(duration = 320) {
     if (this.isDestroyed) return Promise.resolve();
     return new Promise((resolve) => {
+      // Guardamos el resolve para que un cierre externo (cambio de beat) también
+      // libere a quien esté esperando esta viñeta dentro de una secuencia.
+      this.showResolve = resolve;
       this.container.setScale(0.92);
       this.scene.tweens.add({
         targets: this.container,
@@ -178,19 +182,25 @@ export class ComicPanel {
         ease: "Back.easeOut",
         onComplete: () => {
           if (this.isDestroyed) {
-            resolve();
+            this.settleShow();
             return;
           }
           if (this.options.autoDismissDelay > 0) {
             this.autoTimer = this.scene.time.delayedCall(this.options.autoDismissDelay, () => {
-              this.dismiss().then(resolve);
+              this.dismiss();
             });
           } else {
-            resolve();
+            this.settleShow();
           }
         }
       });
     });
+  }
+
+  settleShow() {
+    const resolve = this.showResolve;
+    this.showResolve = null;
+    resolve?.();
   }
 
   dismiss(duration = 280) {
@@ -217,6 +227,7 @@ export class ComicPanel {
   destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
+    this.settleShow();
     if (this.shakyTween) {
       this.shakyTween.stop();
       this.shakyTween = null;

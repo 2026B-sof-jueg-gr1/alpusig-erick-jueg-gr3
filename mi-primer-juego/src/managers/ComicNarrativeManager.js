@@ -1,10 +1,14 @@
 import { ComicPanel } from "../ui/ComicPanel.js";
 import { SpeechBubble } from "../ui/SpeechBubble.js";
+import { readingTime } from "../config/narrativeTiming.js";
 
 /**
  * Gestor central del Sistema de Viñetas de Cómic Dinámicas.
  * Despliega viñetas en esquinas y bocadillos sobre personajes en el mundo 2D
  * sin pausar el juego durante fases caminables o de combate.
+ *
+ * El tiempo de permanencia se calcula según la longitud del texto cuando la
+ * escena no indica lo contrario, de modo que ningún diálogo se lea «de golpe».
  */
 export class ComicNarrativeManager {
   constructor(scene, audio = null) {
@@ -24,7 +28,11 @@ export class ComicNarrativeManager {
       existing.destroy();
     }
 
-    const panel = new ComicPanel(this.scene, options);
+    const panelOptions = {
+      ...options,
+      autoDismissDelay: options.autoDismissDelay ?? readingTime(options.text || "")
+    };
+    const panel = new ComicPanel(this.scene, panelOptions);
     this.activeVignettes.set(corner, panel);
     this.audio?.playComicPop();
 
@@ -46,7 +54,11 @@ export class ComicNarrativeManager {
       }
     }
 
-    const bubble = new SpeechBubble(this.scene, target, text, options);
+    const bubbleOptions = {
+      ...options,
+      duration: options.duration ?? readingTime(text)
+    };
+    const bubble = new SpeechBubble(this.scene, target, text, bubbleOptions);
     this.activeBubbles.add(bubble);
     this.audio?.playComicPop();
 
@@ -76,6 +88,18 @@ export class ComicNarrativeManager {
     }
   }
 
+  /** Retira con una transición suave todos los diálogos visibles (cambio de beat). */
+  async dismissAll() {
+    const panels = [...this.activeVignettes.values()];
+    const bubbles = [...this.activeBubbles];
+    this.activeVignettes.clear();
+    this.activeBubbles.clear();
+    await Promise.all([
+      ...panels.map((panel) => panel.dismiss()),
+      ...bubbles.map((bubble) => bubble.dismiss())
+    ]);
+  }
+
   update() {
     for (const bubble of this.activeBubbles) {
       if (bubble.isDestroyed) {
@@ -98,4 +122,3 @@ export class ComicNarrativeManager {
     this.activeBubbles.clear();
   }
 }
-

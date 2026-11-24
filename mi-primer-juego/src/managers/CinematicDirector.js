@@ -1,5 +1,6 @@
 import { WIDTH, HEIGHT } from "../config/constants.js";
 import { CINEMATIC_PLATES, FULL_FRAME } from "../config/cinematicConfig.js";
+import { NARRATIVE_TIMING } from "../config/narrativeTiming.js";
 import { CinematicPlate } from "../ui/CinematicPlate.js";
 
 const PLATE_ASPECT = 1920 / 1072;
@@ -22,6 +23,8 @@ export class CinematicDirector {
     this.atmospheres = new Set();
     this.letterboxBars = null;
     this.dimLayer = null;
+    this.activeWait = null;
+    this.skipHint = null;
 
     scene.events.once("shutdown", () => this.clear());
     scene.events.once("destroy", () => this.clear());
@@ -108,8 +111,8 @@ export class CinematicDirector {
     plate.show();
     this.audio?.playCinematicRiser?.();
 
-    const hold = options.hold ?? 4200;
-    await this.wait(hold);
+    const hold = options.hold ?? NARRATIVE_TIMING.fullscreen;
+    await this.wait(hold, { skippable: true });
 
     await plate.hide({ duration: 380 });
     this.plates.delete(plate);
@@ -200,7 +203,7 @@ export class CinematicDirector {
         depth: 160,
         stamp,
         slideFrom: 0,
-        duration: shotConfig.hold ?? 1800
+        duration: shotConfig.hold ?? NARRATIVE_TIMING.shot
       });
 
       plate.show({ duration: shotConfig.fadeIn ?? 240 });
@@ -209,7 +212,7 @@ export class CinematicDirector {
         this.impactFlash();
       }
 
-      await this.wait(shotConfig.hold ?? 1800);
+      await this.wait(shotConfig.hold ?? NARRATIVE_TIMING.shot, { skippable: true, hint: false });
       await plate.hide({ duration: shotConfig.fadeOut ?? 260 });
       this.plates.delete(plate);
     }
@@ -239,7 +242,7 @@ export class CinematicDirector {
     const atmosphere = this.createAtmosphere(options.atmosphere);
     plate.show({ duration: options.fadeIn ?? 120 });
 
-    await this.wait(options.hold ?? 1200);
+    await this.wait(options.hold ?? NARRATIVE_TIMING.flash);
 
     await plate.hide({ duration: options.fadeOut ?? 200 });
     this.plates.delete(plate);
@@ -361,7 +364,7 @@ export class CinematicDirector {
     this.audio?.playPanelSlide?.();
     this.insets.add(plate);
 
-    const hold = options.hold ?? 6200;
+    const hold = options.hold ?? NARRATIVE_TIMING.inset;
     this.scene.time.delayedCall(hold, () => {
       if (!plate.isDestroyed) {
         plate.hide({ duration: 320 });
@@ -458,7 +461,7 @@ export class CinematicDirector {
       }
     });
 
-    await this.wait(options.hold ?? 4200);
+    await this.wait(options.hold ?? NARRATIVE_TIMING.strip, { skippable: true });
 
     await Promise.all(created.map((plate) => plate.hide({ duration: 320 })));
     created.forEach((plate) => {
@@ -488,17 +491,83 @@ export class CinematicDirector {
     return plate;
   }
 
-  wait(duration) {
+  /**
+   * Espera durante una cinemática. Las esperas lectoras (`skippable`) permiten
+   * avanzar con ENTER para no castigar al jugador en partidas repetidas; el
+   * aviso aparece solo después de un segundo para no competir con la lectura.
+   */
+  wait(duration, { skippable = false, hint = true } = {}) {
     return new Promise((resolve) => {
       if (!this.scene?.sys?.isActive()) {
         resolve();
         return;
       }
-      this.scene.time.delayedCall(duration, resolve);
+
+      let finished = false;
+      let timer = null;
+      let hintTimer = null;
+      const keyboard = this.scene.input?.keyboard;
+
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        timer?.remove(false);
+        hintTimer?.remove(false);
+        keyboard?.off("keydown-ENTER", finish);
+        if (this.skipHint) {
+          this.scene.tweens.killTweensOf(this.skipHint);
+          this.skipHint.destroy();
+          this.skipHint = null;
+        }
+        if (this.activeWait === finish) this.activeWait = null;
+        resolve();
+      };
+
+      timer = this.scene.time.delayedCall(duration, finish);
+
+      if (skippable) {
+        this.activeWait = finish;
+        keyboard?.on("keydown-ENTER", finish);
+        if (hint) {
+          hintTimer = this.scene.time.delayedCall(NARRATIVE_TIMING.skipHintDelay, () => {
+            if (finished) return;
+            this.skipHint = this.scene.add
+              .text(WIDTH / 2, HEIGHT - 26, "ENTER para continuar", {
+                fontFamily: "Arial, sans-serif",
+                fontSize: "12px",
+                color: "#f6eedb",
+                backgroundColor: "#1a1412bb",
+                padding: { left: 10, right: 10, top: 4, bottom: 4 }
+              })
+              .setOrigin(0.5)
+              .setScrollFactor(0)
+              .setDepth(179)
+              .setAlpha(0);
+            this.scene.tweens.add({
+              targets: this.skipHint,
+              alpha: 0.85,
+              duration: 480,
+              yoyo: true,
+              repeat: -1,
+              hold: 420,
+              ease: "Sine.easeInOut"
+            });
+          });
+        }
+      }
     });
   }
 
   clear() {
+    // Si la escena se cierra a mitad de una cinemática, desbloqueamos cualquier
+    // espera pendiente para no dejar cadenas async colgadas.
+    this.activeWait?.();
+    this.activeWait = null;
+    if (this.skipHint) {
+      this.skipHint.destroy();
+      this.skipHint = null;
+    }
+
     this.plates.forEach((plate) => plate.destroy());
     this.plates.clear();
     this.insets.clear();

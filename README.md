@@ -69,8 +69,10 @@ No es un plataformas con texto encima, ni una novela gráfica con un botón de *
 | Tecla | Acción |
 | :--- | :--- |
 | `A` `D` / `←` `→` | Caminar por el pueblo |
+| `E` (cerca de un personaje) | Hablar con familiares y vecinos (objetivo opcional) |
+| `E` / acercarse | Hablar con el General (en la plaza) |
 | `J` | Postura marcial (una vez armado) |
-| `E` / acercarse | Hablar con el General |
+| `ENTER` | Avanzar una cinemática cuando ya la leíste |
 | `P` | Pausa |
 
 **Escena 2 — combate con Dory y Hoplón**
@@ -83,6 +85,7 @@ No es un plataformas con texto encima, ni una novela gráfica con un botón de *
 | `Shift` / `L` | Guardia férrea |
 | `Shift` + `J` | Golpe de escudo (rompe guardia) |
 | `S` / `↓` | Agacharse ante las flechas (huida) |
+| `ENTER` | Avanzar una cinemática cuando ya la leíste |
 | `P` | Pausa |
 
 **Escena 3 — el regreso**

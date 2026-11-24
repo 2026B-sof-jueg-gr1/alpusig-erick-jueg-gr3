@@ -1,4 +1,5 @@
 import { SPARTA_COLORS } from "../config/constants.js";
+import { readingTime } from "../config/narrativeTiming.js";
 
 /**
  * Bocadillo de Diálogo en el mundo 2D posicionado dinámicamente
@@ -11,7 +12,7 @@ export class SpeechBubble {
     this.options = {
       offsetY: options.offsetY ?? 74,
       maxWidth: options.maxWidth ?? 300,
-      duration: options.duration ?? 4500,
+      duration: options.duration ?? readingTime(text),
       speakerColor: options.speakerColor ?? "#1a1412",
       depth: options.depth ?? 130,
       ...options
@@ -84,6 +85,7 @@ export class SpeechBubble {
   show() {
     if (this.isDestroyed) return Promise.resolve();
     return new Promise((resolve) => {
+      this.showResolve = resolve;
       this.scene.tweens.add({
         targets: this.container,
         alpha: 1,
@@ -92,19 +94,25 @@ export class SpeechBubble {
         ease: "Back.easeOut",
         onComplete: () => {
           if (this.isDestroyed) {
-            resolve();
+            this.settleShow();
             return;
           }
           if (this.options.duration > 0) {
             this.autoTimer = this.scene.time.delayedCall(this.options.duration, () => {
-              this.dismiss().then(resolve);
+              this.dismiss();
             });
           } else {
-            resolve();
+            this.settleShow();
           }
         }
       });
     });
+  }
+
+  settleShow() {
+    const resolve = this.showResolve;
+    this.showResolve = null;
+    resolve?.();
   }
 
   dismiss() {
@@ -131,6 +139,7 @@ export class SpeechBubble {
   destroy() {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
+    this.settleShow();
     if (this.autoTimer) {
       this.autoTimer.remove(false);
       this.autoTimer = null;

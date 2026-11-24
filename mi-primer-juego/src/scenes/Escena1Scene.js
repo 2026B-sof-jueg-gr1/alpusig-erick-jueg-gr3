@@ -5,6 +5,7 @@ import { SpartanPlayer, SPARTAN_STATES } from "../entities/SpartanPlayer.js";
 import { AudioManager } from "../managers/AudioManager.js";
 import { ComicNarrativeManager } from "../managers/ComicNarrativeManager.js";
 import { CinematicDirector } from "../managers/CinematicDirector.js";
+import { VillageDialogueManager } from "../managers/VillageDialogueManager.js";
 
 /**
  * ESCENA 1: El Escudo del Pueblo y el Llamado de la Sangre
@@ -48,6 +49,10 @@ export class Escena1Scene extends Phaser.Scene {
     this.buildVillagePathArea();
     this.buildPlazaArea();
     this.buildAtmosphereParticles();
+
+    // 1b. Conversaciones opcionales con la familia y los vecinos (solo diálogo)
+    this.dialogue = new VillageDialogueManager(this, this.narrative);
+    this.dialogue.registerNpcs();
 
     // 2. Jugador en Estado 1 (Guardia Pacífico, desarmado en la puerta de su hogar)
     const { x, y } = VILLAGE_LAYOUT.playerSpawn;
@@ -194,10 +199,12 @@ export class Escena1Scene extends Phaser.Scene {
     this.add.image(wellX, GROUND_Y - 32, "spartan_well").setDepth(13);
 
     // Aldeanos trabajando en paz
+    this.villagerSprites = [];
     villagers.forEach((v, idx) => {
       const npc = this.add.image(v.x, GROUND_Y - 33, v.texture)
         .setFlipX(v.flipX)
         .setDepth(14);
+      this.villagerSprites.push(npc);
       this.tweens.add({
         targets: npc,
         y: npc.y - 3,
@@ -210,11 +217,11 @@ export class Escena1Scene extends Phaser.Scene {
 
     // Pórtico de vigilancia (donde trabajan los ancianos guardias)
     this.add.image(watchpostX, GROUND_Y - 94, "watchpost_arch").setDepth(12);
-    elderGuardsX.forEach((ex, idx) => {
+    this.elderGuardSprites = elderGuardsX.map((ex, idx) =>
       this.add.image(ex, GROUND_Y - 34, "spartan_elder_guard")
         .setFlipX(idx === 1)
-        .setDepth(15);
-    });
+        .setDepth(15)
+    );
   }
 
   buildPlazaArea() {
@@ -296,8 +303,13 @@ export class Escena1Scene extends Phaser.Scene {
       this.scene.launch("PauseScene", { returnScene: "Escena1Scene" });
     });
 
-    this.input.keyboard.on("keydown-E", () => this.tryTriggerGeneralConfrontation());
+    this.input.keyboard.on("keydown-E", () => {
+      // Primero las conversaciones del pueblo; el General solo se activa en la plaza.
+      if (this.dialogue.tryInteract(this.player.x)) return;
+      this.tryTriggerGeneralConfrontation();
+    });
     this.input.keyboard.on("keydown-J", () => {
+      if (this.dialogue?.active) return;
       if (this.milestoneState.waitingGeneralInteract) {
         this.tryTriggerGeneralConfrontation();
       }
@@ -308,7 +320,7 @@ export class Escena1Scene extends Phaser.Scene {
     this.controlsHint = this.add.text(
       WIDTH / 2,
       HEIGHT - 22,
-      "A / D o Flechas: Caminar   •   J: Postura marcial (armado)   •   P: Pausa",
+      "A / D o Flechas: Caminar   •   E: Hablar   •   J: Postura marcial   •   P: Pausa",
       {
         fontFamily: "Arial, sans-serif",
         fontSize: "13px",
@@ -361,6 +373,7 @@ export class Escena1Scene extends Phaser.Scene {
 
   update(time, delta) {
     this.narrative.update();
+    this.dialogue.update(this.player.x);
 
     if (this.milestoneState.sceneCompleted) return;
 
@@ -463,12 +476,12 @@ export class Escena1Scene extends Phaser.Scene {
       width: 480,
       align: "right",
       margin: 22,
-      hold: 7600,
       caption: "La paz antes de la tormenta",
       slideFrom: 90
     });
 
-    // 3. Viñeta de la Esposa + Bocadillo dinámico del Soldado sin pausar el movimiento
+    // 3. Viñeta de la Esposa + bocadillos del Soldado y del niño. Los tiempos se
+    // calculan según la longitud de cada texto para que den tiempo a leerlos.
     this.narrative.playSequence([
       {
         type: "vignette",
@@ -476,15 +489,29 @@ export class Escena1Scene extends Phaser.Scene {
         speaker: "Esposa",
         portraitKey: CINEMATIC_PORTRAITS.family,
         text: "Tu turno en la muralla termina al anochecer. Los niños quieren escuchar otra vez cómo entrenas con la falange.",
-        autoDismissDelay: 3800,
-        delayAfter: 150
+        delayAfter: 180
       },
       {
         type: "bubble",
         target: this.player,
         offsetY: 78,
         text: "Hoy no habrá historias de entrenamiento. Algún día tendrán historias de verdad que contar sobre su padre.",
-        duration: 3800
+        delayAfter: 180
+      },
+      {
+        type: "bubble",
+        target: this.boySprite,
+        offsetY: 64,
+        text: "¿Otra vez la falange, padre? ¡Quiero ver cómo golpeas el escudo!",
+        delayAfter: 180
+      },
+      {
+        type: "vignette",
+        corner: "top-left",
+        variant: "thought",
+        speaker: "Soldado",
+        portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+        text: "El pequeño escudo de madera rueda junto a sus pies. Algún día lo cambiaré por uno de verdad."
       }
     ]);
   }
@@ -498,8 +525,7 @@ export class Escena1Scene extends Phaser.Scene {
       variant: "thought",
       speaker: "Soldado",
       portraitKey: CINEMATIC_PORTRAITS.soldierThought,
-      text: "Un guardia de frontera... Mientras otros forjan leyendas con sus lanzas, mi única misión es mirar un horizonte vacío.",
-      autoDismissDelay: 4600
+      text: "Un guardia de frontera... Mientras otros forjan leyendas con sus lanzas, mi única misión es mirar un horizonte vacío."
     });
   }
 
@@ -511,7 +537,11 @@ export class Escena1Scene extends Phaser.Scene {
     this.player.setControlEnabled(false);
     this.player.faceDirection(1);
     this.controlsHint.setVisible(false);
+    this.dialogue.dismiss();
     this.cinematic.dismissInsets();
+    // Los diálogos de exploración pueden seguir activos si el jugador corrió
+    // hasta la plaza; los cerramos antes de la cinemática para no solaparlos.
+    await this.narrative.dismissAll();
 
     // Enfocar la cámara sobre la plaza de armas
     const cam = this.cameras.main;
@@ -582,7 +612,7 @@ export class Escena1Scene extends Phaser.Scene {
     await this.narrative.showBubble(
       this.fallenScout,
       "¡Mi General! ¡Ejércitos de Argos marchan hacia nuestras tierras!",
-      { duration: 2400, offsetY: 50 }
+      { offsetY: 50 }
     );
 
     // El General gira hacia su tropa y ordena movilización inmediata
@@ -591,7 +621,6 @@ export class Escena1Scene extends Phaser.Scene {
 
     // Cinemática ilustrada: el reporte y el llamado a las armas en plano ancho
     const cinematic = this.cinematic.playFullscreen("hito1_2", "arrival", {
-      hold: 5200,
       letterboxDuration: 520,
       caption: "Argos marcha sobre el valle. Esparta responde con una sola voz."
     });
@@ -611,13 +640,27 @@ export class Escena1Scene extends Phaser.Scene {
       });
     });
 
+    // La noticia empieza a calar en el soldado antes de que hable el General.
+    await this.narrative.showVignette({
+      corner: "bottom-left",
+      variant: "thought",
+      speaker: "Soldado",
+      portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+      text: "El General ni me mira. Laconia se llena de héroes y yo sigo siendo un nombre sin historia."
+    });
+
+    await this.narrative.showBubble(
+      this.allyTroops[0],
+      "¿Los oís? Argos viene por el valle. Esta vez no será una patrulla.",
+      { offsetY: 66 }
+    );
+
     await this.narrative.showVignette({
       corner: "top-left",
       variant: "dramatic",
       speaker: "General",
       portraitKey: CINEMATIC_PORTRAITS.generalFierce,
-      text: "¡Argos cree que Esparta duerme! ¡Marcharán por nuestras tierras y beberán su propia sangre antes del ocaso! ¡A las armas!",
-      autoDismissDelay: 4600
+      text: "¡Argos cree que Esparta duerme! ¡Marcharán por nuestras tierras y beberán su propia sangre antes del ocaso! ¡A las armas!"
     });
 
     // Preparar Hito 1.3: el General avanza unos pasos para iniciar la marcha y el jugador puede bloquearlo
@@ -646,6 +689,8 @@ export class Escena1Scene extends Phaser.Scene {
     this.milestoneState.hito1_3Started = true;
     this.milestoneState.waitingGeneralInteract = false;
     this.interactPrompt.setVisible(false);
+    this.dialogue.dismiss();
+    await this.narrative.dismissAll();
     this.player.setControlEnabled(false);
 
     // El Soldado se adelanta y bloquea el paso del General
@@ -660,8 +705,7 @@ export class Escena1Scene extends Phaser.Scene {
       variant: "dramatic",
       speaker: "General",
       portraitKey: CINEMATIC_PORTRAITS.generalFrown,
-      text: "Tu puesto está aquí, soldado. Alguien debe sostener el escudo sobre las mujeres y los niños.",
-      autoDismissDelay: 4000
+      text: "Tu puesto está aquí, soldado. Alguien debe sostener el escudo sobre las mujeres y los niños."
     });
 
     // 2. Viñeta del Soldado golpeándose el pecho/escudo con determinación
@@ -671,9 +715,15 @@ export class Escena1Scene extends Phaser.Scene {
       corner: "top-left",
       speaker: "Soldado",
       portraitKey: CINEMATIC_PORTRAITS.soldier,
-      text: "¡Mi lanza se desperdicia cuidando piedras, mi General! ¡Tengo fuerza, tengo corazón! ¡Déjeme demostrar que soy digno de marchar a su sombra!",
-      autoDismissDelay: 4800
+      text: "¡Mi lanza se desperdicia cuidando piedras, mi General! ¡Tengo fuerza, tengo corazón! ¡Déjeme demostrar que soy digno de marchar a su sombra!"
     });
+
+    // La duda que se le queda dentro: el precio de la gloria empieza a verse.
+    await this.narrative.showBubble(
+      this.player,
+      "Mi hijo me miraba... ¿quién cuidará de ellos si no vuelvo?",
+      { offsetY: 82, depth: 170 }
+    );
 
     // 3. Viñeta del General con sonrisa arrogante dándole una palmada en el hombro
     const originalGeneralX = this.generalSprite.x;
@@ -691,8 +741,7 @@ export class Escena1Scene extends Phaser.Scene {
       variant: "dramatic",
       speaker: "General",
       portraitKey: CINEMATIC_PORTRAITS.generalSmirk,
-      text: "El hambre de gloria es lo que hace a un verdadero espartano. Toma tu lanza. Que los viejos cuiden el fuego hoy.",
-      autoDismissDelay: 4600
+      text: "El hambre de gloria es lo que hace a un verdadero espartano. Toma tu lanza. Que los viejos cuiden el fuego hoy."
     });
 
     this.generalSprite.setPosition(originalGeneralX, GROUND_Y - 41);
@@ -717,12 +766,41 @@ export class Escena1Scene extends Phaser.Scene {
     ], {
       panelWidth: 300,
       panelHeight: 384,
-      hold: 4200,
       dimAlpha: 0.66
     });
 
-    // 5. Transición Final: Última mirada al hogar y marcha hacia la derecha
+    // 5. Puente hacia la Escena 2: solo diálogo, sin ilustraciones nuevas.
+    await this.showBridgeVignettes();
+
+    // 6. Transición Final: Última mirada al hogar y marcha hacia la derecha
     this.playClosingMarchSequence();
+  }
+
+  /** Dos viñetas en esquinas opuestas que conectan la marcha con el Hito 2.1. */
+  async showBridgeVignettes() {
+    const first = this.narrative.showVignette({
+      corner: "top-left",
+      variant: "sepia",
+      speaker: "Recuerdo",
+      portraitKey: CINEMATIC_PORTRAITS.generalSepia,
+      text: "«Tu puesto está aquí, soldado. Alguien debe sostener el escudo...»",
+      depth: 150
+    });
+
+    let second = null;
+    this.time.delayedCall(900, () => {
+      second = this.narrative.showVignette({
+        corner: "top-right",
+        variant: "thought",
+        speaker: "Soldado",
+        portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+        text: "Los tambores crecen. Detrás, el pueblo cree que volveremos al anochecer.",
+        depth: 150
+      });
+    });
+
+    await first;
+    if (second) await second;
   }
 
   playClosingMarchSequence() {

@@ -637,38 +637,9 @@ export class Escena3Scene extends Phaser.Scene {
     titleGroup.add([mainTitle, arcSubtitle]);
     await this.tweenPromise(titleGroup, { alpha: 1, duration: 1500 });
 
-    this.createClosingActionButtons();
-  }
-
-  createClosingActionButtons() {
-    const createBtn = (x, y, label, bg, fg, onClick) => {
-      const btn = this.add.text(x, y, label, {
-        fontFamily: "Georgia, serif",
-        fontSize: "15px",
-        color: fg,
-        backgroundColor: bg,
-        padding: { left: 16, right: 16, top: 10, bottom: 10 }
-      })
-        .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(190)
-        .setAlpha(0)
-        .setInteractive({ useHandCursor: true });
-
-      btn.on("pointerdown", onClick);
-      this.tweens.add({ targets: btn, alpha: 1, duration: 600 });
-      return btn;
-    };
-
-    createBtn(WIDTH / 2 - 230, HEIGHT * 0.72, "REPETIR ESCENA 3", "#e8b962", "#1a1412", () => {
-      this.scene.restart();
-    });
-    createBtn(WIDTH / 2, HEIGHT * 0.72, "REJUGAR PARTE 1 (ESCENA 1)", "#7a1212", "#fff6e5", () => {
-      this.scene.start("Escena1Scene");
-    });
-    createBtn(WIDTH / 2 + 225, HEIGHT * 0.72, "MENÚ PRINCIPAL", "#1e3a5f", "#eaf4ff", () => {
-      this.scene.start("MenuScene");
-    });
+    // El título se disfruta un momento y se entrega a la pantalla final dedicada.
+    await this.waitMs(2400);
+    if (this.sys.isActive()) this.scene.start("FinalMenuScene");
   }
 
   tweenPromise(target, config) {

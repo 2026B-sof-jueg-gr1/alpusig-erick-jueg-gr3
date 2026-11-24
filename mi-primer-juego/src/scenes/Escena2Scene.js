@@ -7,6 +7,8 @@ import { SpartanCombatHUD } from "../ui/SpartanCombatHUD.js";
 import { AudioManager } from "../managers/AudioManager.js";
 import { ComicNarrativeManager } from "../managers/ComicNarrativeManager.js";
 import { CinematicDirector } from "../managers/CinematicDirector.js";
+import { NARRATIVE_TIMING } from "../config/narrativeTiming.js";
+import { DialogueFocusManager } from "../managers/DialogueFocusManager.js";
 
 /**
  * ESCENA 2: El Barro, la Lanza y la Caída
@@ -43,9 +45,17 @@ export class Escena2Scene extends Phaser.Scene {
       currentMilestone: "2.1",
       trigger1Done: false,
       trigger2Done: false,
+      allyFallVignetteDone: false,
+      wave3VignetteDone: false,
+      arrowFearDone: false,
+      fleeMidDone: false,
+      bridgeDone: false,
       spawnedWaves: new Set(),
       wave4StartedAt: null,
       inCinematic: false,
+      dialogueFocus: false,
+      stageFrozen: false,
+      fallingArrowTweens: new Set(),
       fleeActive: false,
       sceneCompleted: false,
       playerFailed: false
@@ -62,6 +72,35 @@ export class Escena2Scene extends Phaser.Scene {
     this.player = new SpartanPlayer(this, x, y, SPARTAN_STATES.ACTIVE_COMBAT);
     this.player.setDepth(20);
     this.physics.add.collider(this.player, this.groundColliders);
+
+    // Los diálogos nuevos detienen el mundo y solo mueven la cámara muy despacio.
+    let controlBeforeFocus = false;
+    this.focus = new DialogueFocusManager(this, this.narrative, {
+      player: this.player,
+      onFreeze: () => {
+        controlBeforeFocus = this.player.controlEnabled;
+        if (controlBeforeFocus) {
+          this.player.setControlEnabled(false);
+        } else {
+          // En plena cinemática no queremos cambiar la pose (p. ej. herido de rodillas).
+          this.player.setVelocityX(0);
+        }
+        this.phaseState.dialogueFocus = true;
+        this.freezeStage();
+      },
+      onResume: () => {
+        this.phaseState.dialogueFocus = false;
+        this.unfreezeStage();
+        if (
+          controlBeforeFocus &&
+          !this.phaseState.inCinematic &&
+          !this.phaseState.sceneCompleted &&
+          !this.phaseState.playerFailed
+        ) {
+          this.player.setControlEnabled(true);
+        }
+      }
+    });
 
     // 3. Gestor de enemigos de Argos
     this.enemyManager = new ArgosEnemyManager(
@@ -125,7 +164,6 @@ export class Escena2Scene extends Phaser.Scene {
     }
 
     await this.cinematic.playFullscreen("hito2_1", "clash", {
-      hold: 3600,
       atmosphere: "rain",
       caption: "El desfiladero de Argos. La lluvia no distingue bandos.",
       zoomFrom: 1.02,
@@ -138,6 +176,19 @@ export class Escena2Scene extends Phaser.Scene {
     this.phaseState.inCinematic = false;
     this.player.setControlEnabled(true);
     this.showCombatTutorialCard();
+
+    // Primer pensamiento en combate: la gloria que buscaba ya sabe a barro.
+    this.focus.play([
+      {
+        type: "vignette",
+        corner: "top-right",
+        variant: "thought",
+        speaker: "Soldado",
+        portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+        text: "El General habló de una patrulla. Pero la lluvia se llevó sus palabras y el barro se está llevando a mis hermanos.",
+        depth: 200
+      }
+    ]);
   }
 
   // ==========================================================================
@@ -332,7 +383,7 @@ export class Escena2Scene extends Phaser.Scene {
       targets: banner,
       alpha: 1,
       duration: 500,
-      hold: 2300,
+      hold: NARRATIVE_TIMING.banner,
       yoyo: true,
       onComplete: () => {
         if (banner.active) banner.destroy();
@@ -383,11 +434,13 @@ export class Escena2Scene extends Phaser.Scene {
 
     if (this.phaseState.sceneCompleted || this.phaseState.playerFailed) return;
 
-    if (!this.phaseState.inCinematic) {
+    if (!this.phaseState.inCinematic && !this.phaseState.dialogueFocus) {
       this.player.update(time, delta, this.cursors, this.keys);
     }
 
     this.hud.updatePlayerStatus(this.player);
+
+    if (this.phaseState.dialogueFocus) return;
 
     if (this.phaseState.currentMilestone === "2.1") {
       this.enemyManager.update(time, this.player);
@@ -398,12 +451,61 @@ export class Escena2Scene extends Phaser.Scene {
     }
   }
 
+  /** Congela física y decorados para que el foco narrativo sea un alto real. */
+  freezeStage() {
+    if (this.phaseState.stageFrozen) return;
+    this.phaseState.stageFrozen = true;
+
+    // Sin esto, Arcade Physics seguiría moviendo los cuerpos con la velocidad
+    // que traían aunque no llamemos a update(): el soldado "seguía caminando"
+    // con la tecla a medio soltar y los argivos seguían avanzando.
+    this.physics.world.pause();
+    this.enemyManager?.enemies?.getChildren().forEach((enemy) => {
+      enemy.setVelocityX(0);
+      enemy.setVelocityY(0);
+      if (enemy.body) enemy.body.moves = false;
+    });
+    this.enemyManager?.arrows?.getChildren().forEach((arrow) => {
+      arrow.setVelocityX(0);
+      arrow.setVelocityY(0);
+      if (arrow.body) arrow.body.moves = false;
+    });
+    this.skirmishPairs?.forEach((pair) => {
+      pair.clashTween?.pause();
+      pair.argosTween?.pause();
+    });
+    this.phaseState.fallingArrowTweens?.forEach((tween) => tween.pause());
+  }
+
+  unfreezeStage() {
+    if (!this.phaseState.stageFrozen) return;
+    this.phaseState.stageFrozen = false;
+
+    this.physics.world.resume();
+    this.enemyManager?.enemies?.getChildren().forEach((enemy) => {
+      if (enemy.body) enemy.body.moves = true;
+    });
+    this.enemyManager?.arrows?.getChildren().forEach((arrow) => {
+      if (arrow.body) arrow.body.moves = true;
+    });
+    this.skirmishPairs?.forEach((pair) => {
+      pair.clashTween?.resume();
+      pair.argosTween?.resume();
+    });
+    this.phaseState.fallingArrowTweens?.forEach((tween) => tween.resume());
+  }
+
   handlePlayerAttack(attackData) {
-    if (this.phaseState.currentMilestone !== "2.1" || this.phaseState.inCinematic) return;
+    if (
+      this.phaseState.currentMilestone !== "2.1" ||
+      this.phaseState.inCinematic ||
+      this.phaseState.dialogueFocus
+    ) return;
     this.enemyManager.applyPlayerAttack(this.player, attackData, this.time.now);
   }
 
   handleArrowHitPlayer(player, arrow) {
+    if (this.phaseState.dialogueFocus) return;
     this.enemyManager.handleArrowOverlap(player, arrow, this.time.now);
     if (player.health <= 0) {
       this.triggerPlayerDefeat("2.1");
@@ -424,6 +526,28 @@ export class Escena2Scene extends Phaser.Scene {
         alpha: 0,
         duration: 1200
       });
+
+      if (!this.phaseState.allyFallVignetteDone) {
+        this.phaseState.allyFallVignetteDone = true;
+        this.focus.play([
+          {
+            type: "vignette",
+            corner: "top-right",
+            speaker: "Aliado caído",
+            text: "¡Cubrid el flanco! ¡No los dejéis pasar!",
+            depth: 200
+          },
+          {
+            type: "vignette",
+            corner: "top-right",
+            variant: "thought",
+            speaker: "Soldado",
+            portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+            text: "Uno cayó sin hacer ruido. Seguimos avanzando. Supongo que eso es la falange.",
+            depth: 200
+          }
+        ]);
+      }
     });
   }
 
@@ -440,6 +564,21 @@ export class Escena2Scene extends Phaser.Scene {
       if (!this.phaseState.spawnedWaves.has(wave.id) && px >= wave.triggerX) {
         this.phaseState.spawnedWaves.add(wave.id);
         this.enemyManager.spawnWave(wave.enemies);
+        if (wave.id === 3 && !this.phaseState.wave3VignetteDone) {
+          this.phaseState.wave3VignetteDone = true;
+          this.focus.play([
+            {
+              type: "vignette",
+              corner: "top-right",
+              variant: "thought",
+              speaker: "Soldado",
+              portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+              text: "El herrero del pueblo lo dijo: Argos forjaba lanzas mientras nosotros repartíamos promesas. Debí escucharlo.",
+              depth: 200
+            }
+          ]);
+        }
+
         if (wave.id === 4) {
           this.phaseState.wave4StartedAt = time;
           this.hud.setObjective("¡SOBREVIVE A LA EMBOSCADA Y AVANZA →!", "#fca5a5");
@@ -455,7 +594,6 @@ export class Escena2Scene extends Phaser.Scene {
 
       // Corte seco de emboscada: la ilustración irrumpe sobre el combate
       this.cinematic.playFlash("hito2_1", "wide", {
-        hold: 1250,
         atmosphere: "rain",
         zoomFrom: 1.0,
         zoomTo: 1.1,
@@ -469,7 +607,6 @@ export class Escena2Scene extends Phaser.Scene {
         speaker: "Soldado",
         portraitKey: CINEMATIC_PORTRAITS.soldierThought,
         text: "Son demasiados... la falange se rompió. No era una patrulla... ¡nos tendieron una trampa!",
-        autoDismissDelay: 4600,
         depth: 200
       });
     }
@@ -492,7 +629,7 @@ export class Escena2Scene extends Phaser.Scene {
       this.narrative.showBubble(
         this.player,
         "¡Por Esparta! ¡Miren cómo caen!",
-        { duration: 3600, offsetY: 78 }
+        { offsetY: 78, depth: 200 }
       );
 
       // Viñeta ilustrada sobre el cielo del desfiladero, sin tapar el combate
@@ -500,7 +637,6 @@ export class Escena2Scene extends Phaser.Scene {
         width: 400,
         x: WIDTH / 2,
         y: 152,
-        hold: 4600,
         slideFrom: 80,
         slideAxis: "y"
       });
@@ -569,6 +705,19 @@ export class Escena2Scene extends Phaser.Scene {
     frontArgos.destroy();
     backLancer.destroy();
 
+    // El soldado entiende que ha perdido el escudo antes de ver caer al General.
+    await this.focus.play([
+      {
+        type: "vignette",
+        corner: "top-right",
+        variant: "dramatic",
+        speaker: "Soldado",
+        portraitKey: CINEMATIC_PORTRAITS.soldierShock,
+        text: "Mi escudo rueda por el barro. Siempre supe que algún día lo perdería... no esperaba que fuera hoy.",
+        depth: 200
+      }
+    ], { resumeFollow: false });
+
     // 2. LA MUERTE DEL ÍDOLO: la ilustración toma el relevo del plano 2D
     await this.playIdolDeathCinematic();
 
@@ -585,23 +734,19 @@ export class Escena2Scene extends Phaser.Scene {
     await this.cinematic.playShotSequence("hito2_2", [
       {
         shot: "wide",
-        hold: 2000,
         caption: "El General se abrió paso entre el humo, derribando a dos argivos."
       },
       {
         shot: "hand",
-        hold: 1700,
         caption: "Su mano ensangrentada se tendió hacia la mía."
       },
       {
         shot: "impact",
-        hold: 1500,
         caption: "La punta de una lanza argiva lo atravesó por la espalda.",
         effect: "impact"
       },
       {
         shot: "collapse",
-        hold: 2200,
         caption: "El hombre más fuerte de Esparta cayó de rodillas frente a mi rostro.",
         blur: 1.0
       }
@@ -616,9 +761,21 @@ export class Escena2Scene extends Phaser.Scene {
       speaker: "Soldado (En shock)",
       portraitKey: CINEMATIC_PORTRAITS.soldierShock,
       text: "Si el hombre más fuerte de Esparta cayó como un mortal... ¿qué esperanza queda aquí?",
-      autoDismissDelay: 4600,
       depth: 200
     });
+
+    // Segundo golpe: el referente del protagonista ya no puede contestarle.
+    await this.focus.play([
+      {
+        type: "vignette",
+        corner: "top-right",
+        variant: "sepia",
+        speaker: "Recuerdo",
+        portraitKey: CINEMATIC_PORTRAITS.generalSepia,
+        text: "«El hambre de gloria es lo que hace a un verdadero espartano.» Eso me dijo hace unas horas. Ahora solo hay lluvia.",
+        depth: 200
+      }
+    ], { resumeFollow: false });
   }
 
   // ==========================================================================
@@ -659,7 +816,6 @@ export class Escena2Scene extends Phaser.Scene {
 
   async playFleeCinematic() {
     await this.cinematic.playFullscreen("hito2_3", "flight", {
-      hold: 3000,
       atmosphere: "rain",
       caption: "El campo está perdido. Solo queda el camino de vuelta.",
       zoomFrom: 1.02,
@@ -672,6 +828,18 @@ export class Escena2Scene extends Phaser.Scene {
     this.phaseState.inCinematic = false;
     this.player.setControlEnabled(true);
     this.startArrowBarrage();
+
+    this.focus.play([
+      {
+        type: "vignette",
+        corner: "top-right",
+        variant: "thought",
+        speaker: "Soldado",
+        portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+        text: "Detrás, los gritos de Argos. Delante, el mismo camino que recorrí hace unas horas convencido de que volvería antes del anochecer.",
+        depth: 200
+      }
+    ]);
   }
 
   startHito2_3FleeDirectly() {
@@ -687,8 +855,27 @@ export class Escena2Scene extends Phaser.Scene {
       delay: 1950,
       loop: true,
       callback: () => {
-        if (this.phaseState.fleeActive && !this.phaseState.sceneCompleted && !this.phaseState.playerFailed) {
+        if (
+          this.phaseState.fleeActive &&
+          !this.phaseState.sceneCompleted &&
+          !this.phaseState.playerFailed &&
+          !this.phaseState.dialogueFocus
+        ) {
           this.spawnArrowVolley();
+          if (!this.phaseState.arrowFearDone) {
+            this.phaseState.arrowFearDone = true;
+            this.focus.play([
+              {
+                type: "vignette",
+                corner: "top-right",
+                variant: "thought",
+                speaker: "Soldado",
+                portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+                text: "¡Flechas! Hasta el cielo se ha puesto de su lado. Aparta el cuerpo, no te detengas.",
+                depth: 200
+              }
+            ]);
+          }
         }
       }
     });
@@ -729,20 +916,25 @@ export class Escena2Scene extends Phaser.Scene {
         shadow.destroy();
         dangerRing.destroy();
 
-        if (!this.phaseState.fleeActive || this.phaseState.sceneCompleted) return;
+        if (
+          !this.phaseState.fleeActive ||
+          this.phaseState.sceneCompleted ||
+          this.phaseState.dialogueFocus
+        ) return;
 
         // Flecha cayendo desde el cielo en diagonal hacia el suelo
         const fallingArrow = this.add.image(targetX + 85, targetY - 260, "argos_arrow")
           .setRotation(-2.25)
           .setDepth(26);
 
-        this.tweens.add({
+        const flightTween = this.tweens.add({
           targets: fallingArrow,
           x: targetX,
           y: targetY - 6,
           duration: 140,
           ease: "Linear",
           onComplete: () => {
+            this.phaseState.fallingArrowTweens.delete(flightTween);
             this.audio.playArrowThud();
             this.enemyManager.spawnParticles(targetX, targetY, "mud_splash", 5);
             this.evaluateArrowVolleyHit(targetX);
@@ -752,6 +944,7 @@ export class Escena2Scene extends Phaser.Scene {
             });
           }
         });
+        this.phaseState.fallingArrowTweens.add(flightTween);
       });
     });
   }
@@ -776,6 +969,22 @@ export class Escena2Scene extends Phaser.Scene {
   }
 
   checkHito2_3Escape() {
+    // Mismo punto del desfiladero donde comprendió la trampa, ahora al huir.
+    if (!this.phaseState.fleeMidDone && this.player.x <= GORGE_LAYOUT.triggers.midMapTrapX) {
+      this.phaseState.fleeMidDone = true;
+      this.focus.play([
+        {
+          type: "vignette",
+          corner: "top-right",
+          variant: "thought",
+          speaker: "Soldado",
+          portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+          text: "Aquí entendí que nos tendían una trampa. Ahora entiendo quién tendió la trampa a mi pueblo: yo mismo, al marcharme.",
+          depth: 200
+        }
+      ]);
+    }
+
     if (this.player.x <= GORGE_LAYOUT.triggers.leftEscapeX) {
       this.finishEscena2();
     }
@@ -793,10 +1002,15 @@ export class Escena2Scene extends Phaser.Scene {
 
     // Cierre ilustrado: el soldado cruza el límite del desfiladero
     await this.cinematic.playFullscreen("hito2_3", "wide", {
-      hold: 2400,
       atmosphere: "rain",
       caption: "Cruzó el límite del desfiladero. Detrás, Argos celebraba."
     });
+
+    if (!this.sys.isActive()) return;
+
+    // Puente hacia la Escena 3: solo diálogo, sin ilustraciones nuevas.
+    await this.narrative.dismissAll();
+    await this.showBridgeVignettes();
 
     if (!this.sys.isActive()) return;
 
@@ -805,6 +1019,33 @@ export class Escena2Scene extends Phaser.Scene {
       this.audio.stopAmbient();
       this.scene.start("Escena3Scene");
     });
+  }
+
+  /** Dos viñetas en esquinas opuestas que conectan la huida con el Hito 3.1. */
+  async showBridgeVignettes() {
+    if (this.phaseState.bridgeDone) return;
+    this.phaseState.bridgeDone = true;
+
+    await this.focus.play([
+      {
+        type: "vignette",
+        corner: "top-right",
+        variant: "sepia",
+        speaker: "Recuerdo",
+        portraitKey: CINEMATIC_PORTRAITS.generalSepia,
+        text: "«Que los viejos cuiden el fuego hoy.» Eso dijeron. El pueblo quedó a mi espalda, sin fuego que cuidar.",
+        depth: 200
+      },
+      {
+        type: "vignette",
+        corner: "top-right",
+        variant: "thought",
+        speaker: "Soldado",
+        portraitKey: CINEMATIC_PORTRAITS.soldierThought,
+        text: "La lluvia se mezcla con algo más denso. Humo. No debería oler a humo tan lejos del valle.",
+        depth: 200
+      }
+    ]);
   }
 
   // ==========================================================================
